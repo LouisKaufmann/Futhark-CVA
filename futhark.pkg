@@ -1,0 +1,4 @@
+require {
+  github.com/diku-dk/cpprandom 1.2.1 #869304710af3a023683d6670316d55dafd973c71
+  github.com/athas/fibs 1.0.1 #3bc391cef7363623738fb1fdf965a7b97be7164a
+}
