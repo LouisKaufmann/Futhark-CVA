@@ -1490,761 +1490,1030 @@ inline int32_t atomic_cmpxchg_i32_local(volatile __local int32_t *p,
 
 // End of atomics.h
 
-__kernel void replicate_2006(__global unsigned char *mem_2002,
-                             int32_t num_elems_2003, float val_2004)
+__kernel void map_transpose_f32(__local volatile
+                                int64_t *block_11_backing_aligned_0,
+                                int32_t destoffset_1, int32_t srcoffset_3,
+                                int32_t num_arrays_4, int32_t x_elems_5,
+                                int32_t y_elems_6, int32_t in_elems_7,
+                                int32_t out_elems_8, int32_t mulx_9,
+                                int32_t muly_10, __global
+                                unsigned char *destmem_0, __global
+                                unsigned char *srcmem_2)
 {
     const int block_dim0 = 0;
     const int block_dim1 = 1;
     const int block_dim2 = 2;
-    int32_t replicate_gtid_2006;
-    int32_t replicate_ltid_2007;
-    int32_t replicate_gid_2008;
+    __local volatile char *restrict block_11_backing_0 = (__local volatile
+                                                          char *) block_11_backing_aligned_0;
+    __local char *block_11;
     
-    replicate_gtid_2006 = get_global_id(0);
-    replicate_ltid_2007 = get_local_id(0);
-    replicate_gid_2008 = get_group_id(0);
-    if (slt32(replicate_gtid_2006, num_elems_2003)) {
-        ((__global float *) mem_2002)[replicate_gtid_2006] = val_2004;
+    block_11 = (__local char *) block_11_backing_0;
+    
+    int32_t get_global_id_0_37;
+    
+    get_global_id_0_37 = get_global_id(0);
+    
+    int32_t get_local_id_0_38;
+    
+    get_local_id_0_38 = get_local_id(0);
+    
+    int32_t get_local_id_1_39;
+    
+    get_local_id_1_39 = get_local_id(1);
+    
+    int32_t get_group_id_0_40;
+    
+    get_group_id_0_40 = get_group_id(0);
+    
+    int32_t get_group_id_1_41;
+    
+    get_group_id_1_41 = get_group_id(1);
+    
+    int32_t get_group_id_2_42;
+    
+    get_group_id_2_42 = get_group_id(2);
+    
+    int32_t our_array_offset_30 = get_group_id_2_42 * x_elems_5 * y_elems_6;
+    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;
+    int32_t idata_offset_34 = squot32(srcoffset_3, 4) + our_array_offset_30;
+    int32_t x_index_31 = get_global_id_0_37;
+    int32_t y_index_32 = get_group_id_1_41 * 32 + get_local_id_1_39;
+    
+    if (slt32(x_index_31, x_elems_5)) {
+        for (int32_t j_43 = 0; j_43 < 4; j_43++) {
+            int32_t index_in_35 = (y_index_32 + j_43 * 8) * x_elems_5 +
+                    x_index_31;
+            
+            if (slt32(y_index_32 + j_43 * 8, y_elems_6) && slt32(index_in_35,
+                                                                 in_elems_7)) {
+                ((__local float *) block_11)[(get_local_id_1_39 + j_43 * 8) *
+                                             33 + get_local_id_0_38] =
+                    ((__global float *) srcmem_2)[idata_offset_34 +
+                                                  index_in_35];
+            }
+        }
     }
-    
-  error_0:
-    return;
-}
-__kernel void replicate_2018(int32_t steps_1286, __global
-                             unsigned char *xs_mem_1953, __global
-                             unsigned char *mem_1958)
-{
-    const int block_dim0 = 0;
-    const int block_dim1 = 1;
-    const int block_dim2 = 2;
-    int32_t replicate_gtid_2018;
-    int32_t replicate_ltid_2019;
-    int32_t replicate_gid_2020;
-    
-    replicate_gtid_2018 = get_global_id(0);
-    replicate_ltid_2019 = get_local_id(0);
-    replicate_gid_2020 = get_group_id(0);
-    if (slt32(replicate_gtid_2018, steps_1286)) {
-        ((__global float *) mem_1958)[squot32(replicate_gtid_2018, steps_1286) *
-                                      steps_1286 + (replicate_gtid_2018 -
-                                                    squot32(replicate_gtid_2018,
-                                                            steps_1286) *
-                                                    steps_1286)] = ((__global
-                                                                     float *) xs_mem_1953)[replicate_gtid_2018 -
-                                                                                           squot32(replicate_gtid_2018,
-                                                                                                   steps_1286) *
-                                                                                           steps_1286];
-    }
-    
-  error_0:
-    return;
-}
-__kernel void segmap_1808(__global int *global_failure, int32_t paths_1285,
-                          int32_t steps_1286, __global unsigned char *mem_1930,
-                          __global unsigned char *mem_1936)
-{
-    #define segmap_group_sizze_1814 (mainzisegmap_group_sizze_1813)
-    
-    const int block_dim0 = 0;
-    const int block_dim1 = 1;
-    const int block_dim2 = 2;
-    
-    if (*global_failure >= 0)
-        return;
-    
-    int32_t global_tid_1997;
-    int32_t local_tid_1998;
-    int32_t group_sizze_2001;
-    int32_t wave_sizze_2000;
-    int32_t group_tid_1999;
-    
-    global_tid_1997 = get_global_id(0);
-    local_tid_1998 = get_local_id(0);
-    group_sizze_2001 = get_local_size(0);
-    wave_sizze_2000 = LOCKSTEP_WIDTH;
-    group_tid_1999 = get_group_id(0);
-    
-    int32_t phys_tid_1808;
-    
-    phys_tid_1808 = global_tid_1997;
-    
-    int32_t gtid_1806;
-    
-    gtid_1806 = squot32(group_tid_1999 * segmap_group_sizze_1814 +
-                        local_tid_1998, steps_1286);
-    
-    int32_t gtid_1807;
-    
-    gtid_1807 = group_tid_1999 * segmap_group_sizze_1814 + local_tid_1998 -
-        squot32(group_tid_1999 * segmap_group_sizze_1814 + local_tid_1998,
-                steps_1286) * steps_1286;
-    if (slt32(gtid_1806, paths_1285) && slt32(gtid_1807, steps_1286)) {
-        int32_t unsign_arg_1821 = ((__global int32_t *) mem_1930)[gtid_1806];
-        int32_t x_1823 = lshr32(gtid_1807, 16);
-        int32_t x_1824 = gtid_1807 ^ x_1823;
-        int32_t x_1825 = mul32(73244475, x_1824);
-        int32_t x_1826 = lshr32(x_1825, 16);
-        int32_t x_1827 = x_1825 ^ x_1826;
-        int32_t x_1828 = mul32(73244475, x_1827);
-        int32_t x_1829 = lshr32(x_1828, 16);
-        int32_t x_1830 = x_1828 ^ x_1829;
-        int32_t unsign_arg_1831 = unsign_arg_1821 ^ x_1830;
-        int32_t unsign_arg_1832 = mul32(48271, unsign_arg_1831);
-        int32_t unsign_arg_1833 = umod32(unsign_arg_1832, 2147483647);
-        int32_t unsign_arg_1834 = mul32(48271, unsign_arg_1833);
-        int32_t unsign_arg_1835 = umod32(unsign_arg_1834, 2147483647);
-        float res_1836 = uitofp_i32_f32(unsign_arg_1833);
-        float res_1837 = res_1836 / 2.1474836e9F;
-        float res_1838 = uitofp_i32_f32(unsign_arg_1835);
-        float res_1839 = res_1838 / 2.1474836e9F;
-        float res_1840;
-        
-        res_1840 = futrts_log32(res_1837);
-        
-        float res_1841 = -2.0F * res_1840;
-        float res_1842;
-        
-        res_1842 = futrts_sqrt32(res_1841);
-        
-        float res_1843 = 6.2831855F * res_1839;
-        float res_1844;
-        
-        res_1844 = futrts_cos32(res_1843);
-        
-        float res_1845 = res_1842 * res_1844;
-        
-        ((__global float *) mem_1936)[gtid_1806 * steps_1286 + gtid_1807] =
-            res_1845;
-    }
-    
-  error_0:
-    return;
-    #undef segmap_group_sizze_1814
-}
-__kernel void segmap_1847(__global int *global_failure, int32_t paths_1285,
-                          __global unsigned char *mem_1930)
-{
-    #define segmap_group_sizze_1851 (mainzisegmap_group_sizze_1850)
-    
-    const int block_dim0 = 0;
-    const int block_dim1 = 1;
-    const int block_dim2 = 2;
-    
-    if (*global_failure >= 0)
-        return;
-    
-    int32_t global_tid_1992;
-    int32_t local_tid_1993;
-    int32_t group_sizze_1996;
-    int32_t wave_sizze_1995;
-    int32_t group_tid_1994;
-    
-    global_tid_1992 = get_global_id(0);
-    local_tid_1993 = get_local_id(0);
-    group_sizze_1996 = get_local_size(0);
-    wave_sizze_1995 = LOCKSTEP_WIDTH;
-    group_tid_1994 = get_group_id(0);
-    
-    int32_t phys_tid_1847;
-    
-    phys_tid_1847 = global_tid_1992;
-    
-    int32_t gtid_1846;
-    
-    gtid_1846 = group_tid_1994 * segmap_group_sizze_1851 + local_tid_1993;
-    if (slt32(gtid_1846, paths_1285)) {
-        int32_t x_1859 = lshr32(gtid_1846, 16);
-        int32_t x_1860 = gtid_1846 ^ x_1859;
-        int32_t x_1861 = mul32(73244475, x_1860);
-        int32_t x_1862 = lshr32(x_1861, 16);
-        int32_t x_1863 = x_1861 ^ x_1862;
-        int32_t x_1864 = mul32(73244475, x_1863);
-        int32_t x_1865 = lshr32(x_1864, 16);
-        int32_t x_1866 = x_1864 ^ x_1865;
-        int32_t unsign_arg_1867 = 777822902 ^ x_1866;
-        int32_t unsign_arg_1868 = mul32(48271, unsign_arg_1867);
-        int32_t unsign_arg_1869 = umod32(unsign_arg_1868, 2147483647);
-        
-        ((__global int32_t *) mem_1930)[gtid_1846] = unsign_arg_1869;
-    }
-    
-  error_0:
-    return;
-    #undef segmap_group_sizze_1851
-}
-__kernel void segred_nonseg_1881(__global int *global_failure,
-                                 int failure_is_an_option, __global
-                                 int *global_failure_args, __local volatile
-                                 int64_t *red_arr_mem_2037_backing_aligned_0,
-                                 __local volatile
-                                 int64_t *sync_arr_mem_2035_backing_aligned_1,
-                                 int32_t steps_1286, float swap_term_1287,
-                                 int32_t payments_1288, float notional_1289,
-                                 float a_1290, float sims_per_year_1297,
-                                 float swap_period_1315, int32_t sizze_1362,
-                                 float x_1518, float x_1520, float y_1522,
-                                 float y_1523, float x_1762,
-                                 int32_t num_groups_1875,
-                                 unsigned char loop_not_taken_1910, __global
-                                 unsigned char *mcs_mem_1964, __global
-                                 unsigned char *mem_1968, __global
-                                 unsigned char *mem_1973, __global
-                                 unsigned char *counter_mem_2025, __global
-                                 unsigned char *group_res_arr_mem_2027,
-                                 int32_t num_threads_2029)
-{
-    #define segred_group_sizze_1873 (mainzisegred_group_sizze_1872)
-    
-    const int block_dim0 = 0;
-    const int block_dim1 = 1;
-    const int block_dim2 = 2;
-    __local volatile char *restrict red_arr_mem_2037_backing_1 =
-                          (__local volatile
-                           char *) red_arr_mem_2037_backing_aligned_0;
-    __local volatile char *restrict sync_arr_mem_2035_backing_0 =
-                          (__local volatile
-                           char *) sync_arr_mem_2035_backing_aligned_1;
-    volatile __local bool local_failure;
-    
-    if (failure_is_an_option) {
-        int failed = *global_failure >= 0;
-        
-        if (failed)
-            return;
-    }
-    local_failure = false;
     barrier(CLK_LOCAL_MEM_FENCE);
+    x_index_31 = get_group_id_1_41 * 32 + get_local_id_0_38;
+    y_index_32 = get_group_id_0_40 * 32 + get_local_id_1_39;
+    if (slt32(x_index_31, y_elems_6)) {
+        for (int32_t j_43 = 0; j_43 < 4; j_43++) {
+            int32_t index_out_36 = (y_index_32 + j_43 * 8) * y_elems_6 +
+                    x_index_31;
+            
+            if (slt32(y_index_32 + j_43 * 8, x_elems_5) && slt32(index_out_36,
+                                                                 out_elems_8)) {
+                ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =
+                    ((__local float *) block_11)[get_local_id_0_38 * 33 +
+                                                 get_local_id_1_39 + j_43 * 8];
+            }
+        }
+    }
     
-    int32_t global_tid_2030;
-    int32_t local_tid_2031;
-    int32_t group_sizze_2034;
-    int32_t wave_sizze_2033;
-    int32_t group_tid_2032;
+  error_0:
+    return;
+}
+__kernel void map_transpose_f32_low_height(__local volatile
+                                           int64_t *block_11_backing_aligned_0,
+                                           int32_t destoffset_1,
+                                           int32_t srcoffset_3,
+                                           int32_t num_arrays_4,
+                                           int32_t x_elems_5, int32_t y_elems_6,
+                                           int32_t in_elems_7,
+                                           int32_t out_elems_8, int32_t mulx_9,
+                                           int32_t muly_10, __global
+                                           unsigned char *destmem_0, __global
+                                           unsigned char *srcmem_2)
+{
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    __local volatile char *restrict block_11_backing_0 = (__local volatile
+                                                          char *) block_11_backing_aligned_0;
+    __local char *block_11;
     
-    global_tid_2030 = get_global_id(0);
-    local_tid_2031 = get_local_id(0);
-    group_sizze_2034 = get_local_size(0);
-    wave_sizze_2033 = LOCKSTEP_WIDTH;
-    group_tid_2032 = get_group_id(0);
+    block_11 = (__local char *) block_11_backing_0;
     
-    int32_t phys_tid_1881;
+    int32_t get_global_id_0_37;
     
-    phys_tid_1881 = global_tid_2030;
+    get_global_id_0_37 = get_global_id(0);
     
-    __local char *sync_arr_mem_2035;
+    int32_t get_local_id_0_38;
     
-    sync_arr_mem_2035 = (__local char *) sync_arr_mem_2035_backing_0;
+    get_local_id_0_38 = get_local_id(0);
     
-    __local char *red_arr_mem_2037;
+    int32_t get_local_id_1_39;
     
-    red_arr_mem_2037 = (__local char *) red_arr_mem_2037_backing_1;
+    get_local_id_1_39 = get_local_id(1);
     
-    int32_t dummy_1879;
+    int32_t get_group_id_0_40;
     
-    dummy_1879 = 0;
+    get_group_id_0_40 = get_group_id(0);
     
-    int32_t gtid_1880;
+    int32_t get_group_id_1_41;
     
-    gtid_1880 = 0;
+    get_group_id_1_41 = get_group_id(1);
     
-    float x_acc_2039;
-    int32_t chunk_sizze_2040;
+    int32_t get_group_id_2_42;
     
-    chunk_sizze_2040 = smin32(squot32(steps_1286 + segred_group_sizze_1873 *
-                                      num_groups_1875 - 1,
-                                      segred_group_sizze_1873 *
-                                      num_groups_1875), squot32(steps_1286 -
-                                                                phys_tid_1881 +
-                                                                num_threads_2029 -
+    get_group_id_2_42 = get_group_id(2);
+    
+    int32_t our_array_offset_30 = get_group_id_2_42 * x_elems_5 * y_elems_6;
+    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;
+    int32_t idata_offset_34 = squot32(srcoffset_3, 4) + our_array_offset_30;
+    int32_t x_index_31 = get_group_id_0_40 * 16 * mulx_9 + get_local_id_0_38 +
+            srem32(get_local_id_1_39, mulx_9) * 16;
+    int32_t y_index_32 = get_group_id_1_41 * 16 + squot32(get_local_id_1_39,
+                                                          mulx_9);
+    int32_t index_in_35 = y_index_32 * x_elems_5 + x_index_31;
+    
+    if (slt32(x_index_31, x_elems_5) && (slt32(y_index_32, y_elems_6) &&
+                                         slt32(index_in_35, in_elems_7))) {
+        ((__local float *) block_11)[get_local_id_1_39 * 17 +
+                                     get_local_id_0_38] = ((__global
+                                                            float *) srcmem_2)[idata_offset_34 +
+                                                                               index_in_35];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    x_index_31 = get_group_id_1_41 * 16 + squot32(get_local_id_0_38, mulx_9);
+    y_index_32 = get_group_id_0_40 * 16 * mulx_9 + get_local_id_1_39 +
+        srem32(get_local_id_0_38, mulx_9) * 16;
+    
+    int32_t index_out_36 = y_index_32 * y_elems_6 + x_index_31;
+    
+    if (slt32(x_index_31, y_elems_6) && (slt32(y_index_32, x_elems_5) &&
+                                         slt32(index_out_36, out_elems_8))) {
+        ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =
+            ((__local float *) block_11)[get_local_id_0_38 * 17 +
+                                         get_local_id_1_39];
+    }
+    
+  error_0:
+    return;
+}
+__kernel void map_transpose_f32_low_width(__local volatile
+                                          int64_t *block_11_backing_aligned_0,
+                                          int32_t destoffset_1,
+                                          int32_t srcoffset_3,
+                                          int32_t num_arrays_4,
+                                          int32_t x_elems_5, int32_t y_elems_6,
+                                          int32_t in_elems_7,
+                                          int32_t out_elems_8, int32_t mulx_9,
+                                          int32_t muly_10, __global
+                                          unsigned char *destmem_0, __global
+                                          unsigned char *srcmem_2)
+{
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    __local volatile char *restrict block_11_backing_0 = (__local volatile
+                                                          char *) block_11_backing_aligned_0;
+    __local char *block_11;
+    
+    block_11 = (__local char *) block_11_backing_0;
+    
+    int32_t get_global_id_0_37;
+    
+    get_global_id_0_37 = get_global_id(0);
+    
+    int32_t get_local_id_0_38;
+    
+    get_local_id_0_38 = get_local_id(0);
+    
+    int32_t get_local_id_1_39;
+    
+    get_local_id_1_39 = get_local_id(1);
+    
+    int32_t get_group_id_0_40;
+    
+    get_group_id_0_40 = get_group_id(0);
+    
+    int32_t get_group_id_1_41;
+    
+    get_group_id_1_41 = get_group_id(1);
+    
+    int32_t get_group_id_2_42;
+    
+    get_group_id_2_42 = get_group_id(2);
+    
+    int32_t our_array_offset_30 = get_group_id_2_42 * x_elems_5 * y_elems_6;
+    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;
+    int32_t idata_offset_34 = squot32(srcoffset_3, 4) + our_array_offset_30;
+    int32_t x_index_31 = get_group_id_0_40 * 16 + squot32(get_local_id_0_38,
+                                                          muly_10);
+    int32_t y_index_32 = get_group_id_1_41 * 16 * muly_10 + get_local_id_1_39 +
+            srem32(get_local_id_0_38, muly_10) * 16;
+    int32_t index_in_35 = y_index_32 * x_elems_5 + x_index_31;
+    
+    if (slt32(x_index_31, x_elems_5) && (slt32(y_index_32, y_elems_6) &&
+                                         slt32(index_in_35, in_elems_7))) {
+        ((__local float *) block_11)[get_local_id_1_39 * 17 +
+                                     get_local_id_0_38] = ((__global
+                                                            float *) srcmem_2)[idata_offset_34 +
+                                                                               index_in_35];
+    }
+    barrier(CLK_LOCAL_MEM_FENCE);
+    x_index_31 = get_group_id_1_41 * 16 * muly_10 + get_local_id_0_38 +
+        srem32(get_local_id_1_39, muly_10) * 16;
+    y_index_32 = get_group_id_0_40 * 16 + squot32(get_local_id_1_39, muly_10);
+    
+    int32_t index_out_36 = y_index_32 * y_elems_6 + x_index_31;
+    
+    if (slt32(x_index_31, y_elems_6) && (slt32(y_index_32, x_elems_5) &&
+                                         slt32(index_out_36, out_elems_8))) {
+        ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =
+            ((__local float *) block_11)[get_local_id_0_38 * 17 +
+                                         get_local_id_1_39];
+    }
+    
+  error_0:
+    return;
+}
+__kernel void map_transpose_f32_small(__local volatile
+                                      int64_t *block_11_backing_aligned_0,
+                                      int32_t destoffset_1, int32_t srcoffset_3,
+                                      int32_t num_arrays_4, int32_t x_elems_5,
+                                      int32_t y_elems_6, int32_t in_elems_7,
+                                      int32_t out_elems_8, int32_t mulx_9,
+                                      int32_t muly_10, __global
+                                      unsigned char *destmem_0, __global
+                                      unsigned char *srcmem_2)
+{
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    __local volatile char *restrict block_11_backing_0 = (__local volatile
+                                                          char *) block_11_backing_aligned_0;
+    __local char *block_11;
+    
+    block_11 = (__local char *) block_11_backing_0;
+    
+    int32_t get_global_id_0_37;
+    
+    get_global_id_0_37 = get_global_id(0);
+    
+    int32_t get_local_id_0_38;
+    
+    get_local_id_0_38 = get_local_id(0);
+    
+    int32_t get_local_id_1_39;
+    
+    get_local_id_1_39 = get_local_id(1);
+    
+    int32_t get_group_id_0_40;
+    
+    get_group_id_0_40 = get_group_id(0);
+    
+    int32_t get_group_id_1_41;
+    
+    get_group_id_1_41 = get_group_id(1);
+    
+    int32_t get_group_id_2_42;
+    
+    get_group_id_2_42 = get_group_id(2);
+    
+    int32_t our_array_offset_30 = squot32(get_global_id_0_37, y_elems_6 *
+                                          x_elems_5) * (y_elems_6 * x_elems_5);
+    int32_t x_index_31 = squot32(srem32(get_global_id_0_37, y_elems_6 *
+                                        x_elems_5), y_elems_6);
+    int32_t y_index_32 = srem32(get_global_id_0_37, y_elems_6);
+    int32_t odata_offset_33 = squot32(destoffset_1, 4) + our_array_offset_30;
+    int32_t idata_offset_34 = squot32(srcoffset_3, 4) + our_array_offset_30;
+    int32_t index_in_35 = y_index_32 * x_elems_5 + x_index_31;
+    int32_t index_out_36 = x_index_31 * y_elems_6 + y_index_32;
+    
+    if (slt32(get_global_id_0_37, in_elems_7)) {
+        ((__global float *) destmem_0)[odata_offset_33 + index_out_36] =
+            ((__global float *) srcmem_2)[idata_offset_34 + index_in_35];
+    }
+    
+  error_0:
+    return;
+}
+__kernel void segmap_1160(__global int *global_failure, int32_t paths_946,
+                          int32_t steps_947, float swap_term_948,
+                          float notional_950, float a_951, float b_952,
+                          float sigma_953, float last_date_960,
+                          float sims_per_year_961, __global
+                          unsigned char *mem_1395, __global
+                          unsigned char *mem_1401)
+{
+    #define segmap_group_sizze_1166 (mainzisegmap_group_sizze_1165)
+    
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    
+    if (*global_failure >= 0)
+        return;
+    
+    int32_t global_tid_1451;
+    int32_t local_tid_1452;
+    int32_t group_sizze_1455;
+    int32_t wave_sizze_1454;
+    int32_t group_tid_1453;
+    
+    global_tid_1451 = get_global_id(0);
+    local_tid_1452 = get_local_id(0);
+    group_sizze_1455 = get_local_size(0);
+    wave_sizze_1454 = LOCKSTEP_WIDTH;
+    group_tid_1453 = get_group_id(0);
+    
+    int32_t phys_tid_1160;
+    
+    phys_tid_1160 = global_tid_1451;
+    
+    int32_t gtid_1158;
+    
+    gtid_1158 = squot32(group_tid_1453 * segmap_group_sizze_1166 +
+                        local_tid_1452, steps_947);
+    
+    int32_t gtid_1159;
+    
+    gtid_1159 = group_tid_1453 * segmap_group_sizze_1166 + local_tid_1452 -
+        squot32(group_tid_1453 * segmap_group_sizze_1166 + local_tid_1452,
+                steps_947) * steps_947;
+    if (slt32(gtid_1158, paths_946) && slt32(gtid_1159, steps_947)) {
+        int32_t convop_x_1357 = 1 + gtid_1159;
+        float binop_x_1358 = sitofp_i32_f32(convop_x_1357);
+        float index_primexp_1359 = binop_x_1358 / sims_per_year_961;
+        bool cond_1175 = index_primexp_1359 < last_date_960;
+        float res_1176;
+        
+        if (cond_1175) {
+            float x_1173 = ((__global float *) mem_1395)[gtid_1159 * paths_946 +
+                                                         gtid_1158];
+            float ceil_arg_1177 = index_primexp_1359 / swap_term_948;
+            float res_1178;
+            
+            res_1178 = futrts_ceil32(ceil_arg_1177);
+            
+            float nextpayment_1179 = swap_term_948 * res_1178;
+            float y_1180 = nextpayment_1179 - index_primexp_1359;
+            float negate_arg_1181 = a_951 * y_1180;
+            float exp_arg_1182 = 0.0F - negate_arg_1181;
+            float res_1183 = fpow32(2.7182817F, exp_arg_1182);
+            float x_1184 = 1.0F - res_1183;
+            float B_1185 = x_1184 / a_951;
+            float x_1186 = B_1185 - nextpayment_1179;
+            float x_1187 = x_1186 + index_primexp_1359;
+            float x_1188 = fpow32(a_951, 2.0F);
+            float x_1189 = b_952 * x_1188;
+            float x_1190 = fpow32(sigma_953, 2.0F);
+            float y_1191 = x_1190 / 2.0F;
+            float y_1192 = x_1189 - y_1191;
+            float x_1193 = x_1187 * y_1192;
+            float A1_1194 = x_1193 / x_1188;
+            float y_1195 = fpow32(B_1185, 2.0F);
+            float x_1196 = x_1190 * y_1195;
+            float y_1197 = 4.0F * a_951;
+            float A2_1198 = x_1196 / y_1197;
+            float exp_arg_1199 = A1_1194 - A2_1198;
+            float res_1200 = fpow32(2.7182817F, exp_arg_1199);
+            float negate_arg_1201 = x_1173 * B_1185;
+            float exp_arg_1202 = 0.0F - negate_arg_1201;
+            float res_1203 = fpow32(2.7182817F, exp_arg_1202);
+            float res_1204 = res_1200 * res_1203;
+            float y_1205 = 20.0F - index_primexp_1359;
+            float negate_arg_1206 = a_951 * y_1205;
+            float exp_arg_1207 = 0.0F - negate_arg_1206;
+            float res_1208 = fpow32(2.7182817F, exp_arg_1207);
+            float x_1209 = 1.0F - res_1208;
+            float B_1210 = x_1209 / a_951;
+            float x_1211 = B_1210 - 20.0F;
+            float x_1212 = x_1211 + index_primexp_1359;
+            float x_1213 = y_1192 * x_1212;
+            float A1_1214 = x_1213 / x_1188;
+            float y_1215 = fpow32(B_1210, 2.0F);
+            float x_1216 = x_1190 * y_1215;
+            float A2_1217 = x_1216 / y_1197;
+            float exp_arg_1218 = A1_1214 - A2_1217;
+            float res_1219 = fpow32(2.7182817F, exp_arg_1218);
+            float negate_arg_1220 = x_1173 * B_1210;
+            float exp_arg_1221 = 0.0F - negate_arg_1220;
+            float res_1222 = fpow32(2.7182817F, exp_arg_1221);
+            float res_1223 = res_1219 * res_1222;
+            float y_1224 = res_1204 - res_1223;
+            float res_1225 = notional_950 * y_1224;
+            
+            res_1176 = res_1225;
+        } else {
+            res_1176 = 0.0F;
+        }
+        
+        bool cond_1226 = res_1176 < 0.0F;
+        float res_1227;
+        
+        if (cond_1226) {
+            res_1227 = 0.0F;
+        } else {
+            res_1227 = res_1176;
+        }
+        ((__global float *) mem_1401)[gtid_1158 * steps_947 + gtid_1159] =
+            res_1227;
+    }
+    
+  error_0:
+    return;
+    #undef segmap_group_sizze_1166
+}
+__kernel void segmap_1232(__global int *global_failure, int32_t paths_946,
+                          int32_t steps_947, float a_951, float b_952,
+                          float sigma_953, float r0_954, float dt_958,
+                          int32_t distance_upwards_exclusive_963, float res_984,
+                          int32_t num_groups_1238, __global
+                          unsigned char *mem_1387, __global
+                          unsigned char *mem_1391, __global
+                          unsigned char *mem_1395)
+{
+    #define segmap_group_sizze_1236 (mainzisegmap_group_sizze_1235)
+    
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    
+    if (*global_failure >= 0)
+        return;
+    
+    int32_t global_tid_1440;
+    int32_t local_tid_1441;
+    int32_t group_sizze_1444;
+    int32_t wave_sizze_1443;
+    int32_t group_tid_1442;
+    
+    global_tid_1440 = get_global_id(0);
+    local_tid_1441 = get_local_id(0);
+    group_sizze_1444 = get_local_size(0);
+    wave_sizze_1443 = LOCKSTEP_WIDTH;
+    group_tid_1442 = get_group_id(0);
+    
+    int32_t phys_tid_1232;
+    
+    phys_tid_1232 = global_tid_1440;
+    
+    int32_t phys_group_id_1445;
+    
+    phys_group_id_1445 = get_group_id(0);
+    for (int32_t i_1446 = 0; i_1446 < squot32(squot32(paths_946 +
+                                                      segmap_group_sizze_1236 -
+                                                      1,
+                                                      segmap_group_sizze_1236) -
+                                              phys_group_id_1445 +
+                                              num_groups_1238 - 1,
+                                              num_groups_1238); i_1446++) {
+        int32_t virt_group_id_1447 = phys_group_id_1445 + i_1446 *
+                num_groups_1238;
+        int32_t gtid_1231 = virt_group_id_1447 * segmap_group_sizze_1236 +
+                local_tid_1441;
+        
+        if (slt32(gtid_1231, paths_946)) {
+            for (int32_t i_1448 = 0; i_1448 < steps_947; i_1448++) {
+                ((__global float *) mem_1391)[phys_tid_1232 + i_1448 *
+                                              (num_groups_1238 *
+                                               segmap_group_sizze_1236)] =
+                    r0_954;
+            }
+            for (int32_t i_1244 = 0; i_1244 < distance_upwards_exclusive_963;
+                 i_1244++) {
+                float shortstep_arg_1245 = ((__global
+                                             float *) mem_1387)[i_1244 *
+                                                                paths_946 +
+                                                                gtid_1231];
+                float shortstep_arg_1246 = ((__global
+                                             float *) mem_1391)[phys_tid_1232 +
+                                                                i_1244 *
+                                                                (num_groups_1238 *
+                                                                 segmap_group_sizze_1236)];
+                float y_1247 = b_952 - shortstep_arg_1246;
+                float x_1248 = a_951 * y_1247;
+                float x_1249 = dt_958 * x_1248;
+                float x_1250 = res_984 * shortstep_arg_1245;
+                float y_1251 = sigma_953 * x_1250;
+                float delta_r_1252 = x_1249 + y_1251;
+                float res_1253 = shortstep_arg_1246 + delta_r_1252;
+                int32_t i_1254 = add32(1, i_1244);
+                
+                ((__global float *) mem_1391)[phys_tid_1232 + i_1254 *
+                                              (num_groups_1238 *
+                                               segmap_group_sizze_1236)] =
+                    res_1253;
+            }
+            for (int32_t i_1450 = 0; i_1450 < steps_947; i_1450++) {
+                ((__global float *) mem_1395)[i_1450 * paths_946 + gtid_1231] =
+                    ((__global float *) mem_1391)[phys_tid_1232 + i_1450 *
+                                                  (num_groups_1238 *
+                                                   segmap_group_sizze_1236)];
+            }
+        }
+        barrier(CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE);
+    }
+    
+  error_0:
+    return;
+    #undef segmap_group_sizze_1236
+}
+__kernel void segmap_1275(__global int *global_failure, int32_t paths_946,
+                          int32_t steps_947, __global unsigned char *mem_1377,
+                          __global unsigned char *mem_1383)
+{
+    #define segmap_group_sizze_1281 (mainzisegmap_group_sizze_1280)
+    
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    
+    if (*global_failure >= 0)
+        return;
+    
+    int32_t global_tid_1434;
+    int32_t local_tid_1435;
+    int32_t group_sizze_1438;
+    int32_t wave_sizze_1437;
+    int32_t group_tid_1436;
+    
+    global_tid_1434 = get_global_id(0);
+    local_tid_1435 = get_local_id(0);
+    group_sizze_1438 = get_local_size(0);
+    wave_sizze_1437 = LOCKSTEP_WIDTH;
+    group_tid_1436 = get_group_id(0);
+    
+    int32_t phys_tid_1275;
+    
+    phys_tid_1275 = global_tid_1434;
+    
+    int32_t gtid_1273;
+    
+    gtid_1273 = squot32(group_tid_1436 * segmap_group_sizze_1281 +
+                        local_tid_1435, steps_947);
+    
+    int32_t gtid_1274;
+    
+    gtid_1274 = group_tid_1436 * segmap_group_sizze_1281 + local_tid_1435 -
+        squot32(group_tid_1436 * segmap_group_sizze_1281 + local_tid_1435,
+                steps_947) * steps_947;
+    if (slt32(gtid_1273, paths_946) && slt32(gtid_1274, steps_947)) {
+        int32_t unsign_arg_1288 = ((__global int32_t *) mem_1377)[gtid_1273];
+        int32_t x_1290 = lshr32(gtid_1274, 16);
+        int32_t x_1291 = gtid_1274 ^ x_1290;
+        int32_t x_1292 = mul32(73244475, x_1291);
+        int32_t x_1293 = lshr32(x_1292, 16);
+        int32_t x_1294 = x_1292 ^ x_1293;
+        int32_t x_1295 = mul32(73244475, x_1294);
+        int32_t x_1296 = lshr32(x_1295, 16);
+        int32_t x_1297 = x_1295 ^ x_1296;
+        int32_t unsign_arg_1298 = unsign_arg_1288 ^ x_1297;
+        int32_t unsign_arg_1299 = mul32(48271, unsign_arg_1298);
+        int32_t unsign_arg_1300 = umod32(unsign_arg_1299, 2147483647);
+        int32_t unsign_arg_1301 = mul32(48271, unsign_arg_1300);
+        int32_t unsign_arg_1302 = umod32(unsign_arg_1301, 2147483647);
+        float res_1303 = uitofp_i32_f32(unsign_arg_1300);
+        float res_1304 = res_1303 / 2.1474836e9F;
+        float res_1305 = uitofp_i32_f32(unsign_arg_1302);
+        float res_1306 = res_1305 / 2.1474836e9F;
+        float res_1307;
+        
+        res_1307 = futrts_log32(res_1304);
+        
+        float res_1308 = -2.0F * res_1307;
+        float res_1309;
+        
+        res_1309 = futrts_sqrt32(res_1308);
+        
+        float res_1310 = 6.2831855F * res_1306;
+        float res_1311;
+        
+        res_1311 = futrts_cos32(res_1310);
+        
+        float res_1312 = res_1309 * res_1311;
+        
+        ((__global float *) mem_1383)[gtid_1273 * steps_947 + gtid_1274] =
+            res_1312;
+    }
+    
+  error_0:
+    return;
+    #undef segmap_group_sizze_1281
+}
+__kernel void segmap_1314(__global int *global_failure, int32_t paths_946,
+                          __global unsigned char *mem_1377)
+{
+    #define segmap_group_sizze_1318 (mainzisegmap_group_sizze_1317)
+    
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    
+    if (*global_failure >= 0)
+        return;
+    
+    int32_t global_tid_1429;
+    int32_t local_tid_1430;
+    int32_t group_sizze_1433;
+    int32_t wave_sizze_1432;
+    int32_t group_tid_1431;
+    
+    global_tid_1429 = get_global_id(0);
+    local_tid_1430 = get_local_id(0);
+    group_sizze_1433 = get_local_size(0);
+    wave_sizze_1432 = LOCKSTEP_WIDTH;
+    group_tid_1431 = get_group_id(0);
+    
+    int32_t phys_tid_1314;
+    
+    phys_tid_1314 = global_tid_1429;
+    
+    int32_t gtid_1313;
+    
+    gtid_1313 = group_tid_1431 * segmap_group_sizze_1318 + local_tid_1430;
+    if (slt32(gtid_1313, paths_946)) {
+        int32_t x_1326 = lshr32(gtid_1313, 16);
+        int32_t x_1327 = gtid_1313 ^ x_1326;
+        int32_t x_1328 = mul32(73244475, x_1327);
+        int32_t x_1329 = lshr32(x_1328, 16);
+        int32_t x_1330 = x_1328 ^ x_1329;
+        int32_t x_1331 = mul32(73244475, x_1330);
+        int32_t x_1332 = lshr32(x_1331, 16);
+        int32_t x_1333 = x_1331 ^ x_1332;
+        int32_t unsign_arg_1334 = 777822902 ^ x_1333;
+        int32_t unsign_arg_1335 = mul32(48271, unsign_arg_1334);
+        int32_t unsign_arg_1336 = umod32(unsign_arg_1335, 2147483647);
+        
+        ((__global int32_t *) mem_1377)[gtid_1313] = unsign_arg_1336;
+    }
+    
+  error_0:
+    return;
+    #undef segmap_group_sizze_1318
+}
+__kernel void segred_nonseg_1348(__global int *global_failure, __local volatile
+                                 int64_t *red_arr_mem_1469_backing_aligned_0,
+                                 __local volatile
+                                 int64_t *sync_arr_mem_1467_backing_aligned_1,
+                                 int32_t paths_946, int32_t steps_947,
+                                 float a_951, float sims_per_year_961,
+                                 float res_1102, float x_1103, float x_1105,
+                                 float y_1107, float y_1108,
+                                 int32_t num_groups_1342, __global
+                                 unsigned char *mem_1401, __global
+                                 unsigned char *mem_1405, __global
+                                 unsigned char *mem_1410, __global
+                                 unsigned char *counter_mem_1457, __global
+                                 unsigned char *group_res_arr_mem_1459,
+                                 int32_t num_threads_1461)
+{
+    #define segred_group_sizze_1340 (mainzisegred_group_sizze_1339)
+    
+    const int block_dim0 = 0;
+    const int block_dim1 = 1;
+    const int block_dim2 = 2;
+    __local volatile char *restrict red_arr_mem_1469_backing_1 =
+                          (__local volatile
+                           char *) red_arr_mem_1469_backing_aligned_0;
+    __local volatile char *restrict sync_arr_mem_1467_backing_0 =
+                          (__local volatile
+                           char *) sync_arr_mem_1467_backing_aligned_1;
+    
+    if (*global_failure >= 0)
+        return;
+    
+    int32_t global_tid_1462;
+    int32_t local_tid_1463;
+    int32_t group_sizze_1466;
+    int32_t wave_sizze_1465;
+    int32_t group_tid_1464;
+    
+    global_tid_1462 = get_global_id(0);
+    local_tid_1463 = get_local_id(0);
+    group_sizze_1466 = get_local_size(0);
+    wave_sizze_1465 = LOCKSTEP_WIDTH;
+    group_tid_1464 = get_group_id(0);
+    
+    int32_t phys_tid_1348;
+    
+    phys_tid_1348 = global_tid_1462;
+    
+    __local char *sync_arr_mem_1467;
+    
+    sync_arr_mem_1467 = (__local char *) sync_arr_mem_1467_backing_0;
+    
+    __local char *red_arr_mem_1469;
+    
+    red_arr_mem_1469 = (__local char *) red_arr_mem_1469_backing_1;
+    
+    int32_t dummy_1346;
+    
+    dummy_1346 = 0;
+    
+    int32_t gtid_1347;
+    
+    gtid_1347 = 0;
+    
+    float x_acc_1471;
+    int32_t chunk_sizze_1472;
+    
+    chunk_sizze_1472 = smin32(squot32(steps_947 + segred_group_sizze_1340 *
+                                      num_groups_1342 - 1,
+                                      segred_group_sizze_1340 *
+                                      num_groups_1342), squot32(steps_947 -
+                                                                phys_tid_1348 +
+                                                                num_threads_1461 -
                                                                 1,
-                                                                num_threads_2029));
+                                                                num_threads_1461));
     
-    float x_1531;
-    float x_1532;
+    float x_1112;
+    float x_1113;
     
     // neutral-initialise the accumulators
     {
-        x_acc_2039 = 0.0F;
+        x_acc_1471 = 0.0F;
     }
-    for (int32_t i_2044 = 0; i_2044 < chunk_sizze_2040; i_2044++) {
-        gtid_1880 = phys_tid_1881 + num_threads_2029 * i_2044;
+    for (int32_t i_1476 = 0; i_1476 < chunk_sizze_1472; i_1476++) {
+        gtid_1347 = phys_tid_1348 + num_threads_1461 * i_1476;
         // apply map function
         {
-            int32_t convop_x_1889 = 1 + gtid_1880;
-            float binop_x_1890 = sitofp_i32_f32(convop_x_1889);
-            float index_primexp_1891 = binop_x_1890 / sims_per_year_1297;
-            bool cond_1657 = index_primexp_1891 < swap_period_1315;
-            float ceil_arg_1658 = index_primexp_1891 / swap_term_1287;
-            float res_1659;
+            int32_t convop_x_1361 = 1 + gtid_1347;
+            float binop_x_1362 = sitofp_i32_f32(convop_x_1361);
+            float index_primexp_1363 = binop_x_1362 / sims_per_year_961;
+            float res_1117;
+            float redout_1370 = 0.0F;
             
-            res_1659 = futrts_ceil32(ceil_arg_1658);
-            
-            int32_t res_1660 = fptosi_f32_i32(res_1659);
-            int32_t remaining_1661 = sub32(payments_1288, res_1660);
-            int32_t distance_upwards_exclusive_1662 = sub32(remaining_1661, 1);
-            int32_t distance_1663 = add32(1, distance_upwards_exclusive_1662);
-            float nextpayment_1665 = swap_term_1287 * res_1659;
-            bool bounds_invalid_upwards_1666 = slt32(remaining_1661, 1);
-            int32_t j_m_i_1696 = sub32(-1, distance_upwards_exclusive_1662);
-            bool j_lte_i_1704 = sle32(-1, distance_upwards_exclusive_1662);
-            float binop_y_1711 = sitofp_i32_f32(distance_1663);
-            bool valid_1667 = !bounds_invalid_upwards_1666;
-            float y_1671 = nextpayment_1665 - index_primexp_1891;
-            int32_t n_1697 = squot32(j_m_i_1696, -1);
-            float binop_y_1712 = swap_term_1287 * binop_y_1711;
-            bool loop_not_taken_1907 = !cond_1657;
-            bool protect_assert_disj_1908 = valid_1667 || loop_not_taken_1907;
-            bool protect_assert_disj_1911 = protect_assert_disj_1908 ||
-                 loop_not_taken_1910;
-            bool range_valid_c_1668;
-            
-            if (!protect_assert_disj_1911) {
-                if (atomic_cmpxchg_i32_global(global_failure, -1, 0) == -1) {
-                    global_failure_args[0] = 1;
-                    global_failure_args[1] = 2;
-                    global_failure_args[2] = remaining_1661;
-                    ;
-                }
-                local_failure = true;
-                goto error_0;
-            }
-            
-            float negate_arg_1672 = a_1290 * y_1671;
-            bool empty_slice_1698 = n_1697 == 0;
-            int32_t m_1699 = sub32(n_1697, 1);
-            bool y_1709 = slt32(0, n_1697);
-            float index_primexp_1713 = nextpayment_1665 + binop_y_1712;
-            bool dim_match_1669 = remaining_1661 == distance_1663;
-            float exp_arg_1673 = 0.0F - negate_arg_1672;
-            int32_t m_t_s_1700 = mul32(-1, m_1699);
-            bool protect_assert_disj_1913 = y_1709 || loop_not_taken_1907;
-            bool protect_assert_disj_1916 = loop_not_taken_1910 ||
-                 protect_assert_disj_1913;
-            bool index_certs_1710;
-            
-            if (!protect_assert_disj_1916) {
-                if (atomic_cmpxchg_i32_global(global_failure, -1, 1) == -1) {
-                    global_failure_args[0] = 0;
-                    global_failure_args[1] = n_1697;
-                    ;
-                }
-                local_failure = true;
-                goto error_0;
-            }
-            
-            bool protect_assert_disj_1918 = dim_match_1669 ||
-                 loop_not_taken_1907;
-            bool protect_assert_disj_1921 = loop_not_taken_1910 ||
-                 protect_assert_disj_1918;
-            bool empty_or_match_cert_1670;
-            
-            if (!protect_assert_disj_1921) {
-                if (atomic_cmpxchg_i32_global(global_failure, -1, 2) == -1) {
-                    ;
-                }
-                local_failure = true;
-                goto error_0;
-            }
-            
-            float res_1674 = fpow32(2.7182817F, exp_arg_1673);
-            int32_t i_p_m_t_s_1701 = add32(distance_upwards_exclusive_1662,
-                                           m_t_s_1700);
-            float x_1675 = 1.0F - res_1674;
-            bool zzero_leq_i_p_m_t_s_1702 = sle32(0, i_p_m_t_s_1701);
-            bool i_p_m_t_s_leq_w_1703 = sle32(i_p_m_t_s_1701, remaining_1661);
-            float B_1676 = x_1675 / a_1290;
-            bool y_1705 = zzero_leq_i_p_m_t_s_1702 && i_p_m_t_s_leq_w_1703;
-            float x_1677 = B_1676 - nextpayment_1665;
-            float y_1686 = fpow32(B_1676, 2.0F);
-            bool y_1706 = j_lte_i_1704 && y_1705;
-            float x_1678 = x_1677 + index_primexp_1891;
-            float x_1687 = x_1520 * y_1686;
-            bool ok_or_empty_1707 = empty_slice_1698 || y_1706;
-            float x_1684 = y_1522 * x_1678;
-            float A2_1689 = x_1687 / y_1523;
-            bool protect_assert_disj_1923 = ok_or_empty_1707 ||
-                 loop_not_taken_1907;
-            bool protect_assert_disj_1926 = loop_not_taken_1910 ||
-                 protect_assert_disj_1923;
-            bool index_certs_1708;
-            
-            if (!protect_assert_disj_1926) {
-                if (atomic_cmpxchg_i32_global(global_failure, -1, 3) == -1) {
-                    global_failure_args[0] = -1;
-                    global_failure_args[1] = remaining_1661;
-                    ;
-                }
-                local_failure = true;
-                goto error_0;
-            }
-            
-            float A1_1685 = x_1684 / x_1518;
-            float y_1714 = index_primexp_1713 - index_primexp_1891;
-            float exp_arg_1690 = A1_1685 - A2_1689;
-            float negate_arg_1715 = a_1290 * y_1714;
-            float res_1691 = fpow32(2.7182817F, exp_arg_1690);
-            float exp_arg_1716 = 0.0F - negate_arg_1715;
-            float res_1717 = fpow32(2.7182817F, exp_arg_1716);
-            float x_1718 = 1.0F - res_1717;
-            float B_1719 = x_1718 / a_1290;
-            float x_1720 = B_1719 - index_primexp_1713;
-            float y_1724 = fpow32(B_1719, 2.0F);
-            float x_1721 = x_1720 + index_primexp_1891;
-            float x_1725 = x_1520 * y_1724;
-            float x_1722 = y_1522 * x_1721;
-            float A2_1726 = x_1725 / y_1523;
-            float A1_1723 = x_1722 / x_1518;
-            float exp_arg_1727 = A1_1723 - A2_1726;
-            float res_1728 = fpow32(2.7182817F, exp_arg_1727);
-            float res_1651;
-            float redout_1898 = 0.0F;
-            
-            for (int32_t i_1899 = 0; i_1899 < sizze_1362; i_1899++) {
-                float res_1664;
+            for (int32_t i_1371 = 0; i_1371 < paths_946; i_1371++) {
+                float x_1121 = ((__global float *) mem_1401)[i_1371 *
+                                                             steps_947 +
+                                                             gtid_1347];
+                float res_1120 = x_1121 + redout_1370;
+                float redout_tmp_1477 = res_1120;
                 
-                if (cond_1657) {
-                    float x_1655 = ((__global float *) mcs_mem_1964)[i_1899 *
-                                                                     steps_1286 +
-                                                                     gtid_1880];
-                    float negate_arg_1692 = x_1655 * B_1676;
-                    float exp_arg_1693 = 0.0F - negate_arg_1692;
-                    float res_1694 = fpow32(2.7182817F, exp_arg_1693);
-                    float res_1695 = res_1691 * res_1694;
-                    float negate_arg_1729 = x_1655 * B_1719;
-                    float exp_arg_1730 = 0.0F - negate_arg_1729;
-                    float res_1731 = fpow32(2.7182817F, exp_arg_1730);
-                    float res_1732 = res_1728 * res_1731;
-                    float res_1734;
-                    float redout_1886 = 0.0F;
-                    
-                    for (int32_t i_1887 = 0; i_1887 < remaining_1661;
-                         i_1887++) {
-                        int32_t index_primexp_1893 = 1 + i_1887;
-                        float res_1739 = sitofp_i32_f32(index_primexp_1893);
-                        float res_1740 = swap_term_1287 * res_1739;
-                        float res_1741 = nextpayment_1665 + res_1740;
-                        float y_1742 = res_1741 - index_primexp_1891;
-                        float negate_arg_1743 = a_1290 * y_1742;
-                        float exp_arg_1744 = 0.0F - negate_arg_1743;
-                        float res_1745 = fpow32(2.7182817F, exp_arg_1744);
-                        float x_1746 = 1.0F - res_1745;
-                        float B_1747 = x_1746 / a_1290;
-                        float x_1748 = B_1747 - res_1741;
-                        float x_1749 = x_1748 + index_primexp_1891;
-                        float x_1750 = y_1522 * x_1749;
-                        float A1_1751 = x_1750 / x_1518;
-                        float y_1752 = fpow32(B_1747, 2.0F);
-                        float x_1753 = x_1520 * y_1752;
-                        float A2_1754 = x_1753 / y_1523;
-                        float exp_arg_1755 = A1_1751 - A2_1754;
-                        float res_1756 = fpow32(2.7182817F, exp_arg_1755);
-                        float negate_arg_1757 = x_1655 * B_1747;
-                        float exp_arg_1758 = 0.0F - negate_arg_1757;
-                        float res_1759 = fpow32(2.7182817F, exp_arg_1758);
-                        float res_1760 = res_1756 * res_1759;
-                        float res_1737 = res_1760 + redout_1886;
-                        float redout_tmp_2046 = res_1737;
-                        
-                        redout_1886 = redout_tmp_2046;
-                    }
-                    res_1734 = redout_1886;
-                    
-                    float x_1761 = res_1695 - res_1732;
-                    float y_1763 = res_1734 * x_1762;
-                    float y_1764 = x_1761 - y_1763;
-                    float res_1765 = notional_1289 * y_1764;
-                    
-                    res_1664 = res_1765;
-                } else {
-                    res_1664 = 0.0F;
-                }
-                
-                bool cond_1766 = res_1664 < 0.0F;
-                float res_1767;
-                
-                if (cond_1766) {
-                    res_1767 = 0.0F;
-                } else {
-                    res_1767 = res_1664;
-                }
-                
-                float res_1654 = res_1767 + redout_1898;
-                float redout_tmp_2045 = res_1654;
-                
-                redout_1898 = redout_tmp_2045;
+                redout_1370 = redout_tmp_1477;
             }
-            res_1651 = redout_1898;
+            res_1117 = redout_1370;
             
-            float negate_arg_1769 = a_1290 * index_primexp_1891;
-            float exp_arg_1770 = 0.0F - negate_arg_1769;
-            float res_1771 = fpow32(2.7182817F, exp_arg_1770);
-            float x_1772 = 1.0F - res_1771;
-            float B_1773 = x_1772 / a_1290;
-            float x_1774 = B_1773 - index_primexp_1891;
-            float x_1775 = y_1522 * x_1774;
-            float A1_1776 = x_1775 / x_1518;
-            float y_1777 = fpow32(B_1773, 2.0F);
-            float x_1778 = x_1520 * y_1777;
-            float A2_1779 = x_1778 / y_1523;
-            float exp_arg_1780 = A1_1776 - A2_1779;
-            float res_1781 = fpow32(2.7182817F, exp_arg_1780);
-            float negate_arg_1782 = 5.0e-2F * B_1773;
-            float exp_arg_1783 = 0.0F - negate_arg_1782;
-            float res_1784 = fpow32(2.7182817F, exp_arg_1783);
-            float res_1785 = res_1781 * res_1784;
-            float res_1786 = res_1651 * res_1785;
+            float res_1122 = res_1117 / res_1102;
+            float negate_arg_1123 = a_951 * index_primexp_1363;
+            float exp_arg_1124 = 0.0F - negate_arg_1123;
+            float res_1125 = fpow32(2.7182817F, exp_arg_1124);
+            float x_1126 = 1.0F - res_1125;
+            float B_1127 = x_1126 / a_951;
+            float x_1128 = B_1127 - index_primexp_1363;
+            float x_1129 = y_1107 * x_1128;
+            float A1_1130 = x_1129 / x_1103;
+            float y_1131 = fpow32(B_1127, 2.0F);
+            float x_1132 = x_1105 * y_1131;
+            float A2_1133 = x_1132 / y_1108;
+            float exp_arg_1134 = A1_1130 - A2_1133;
+            float res_1135 = fpow32(2.7182817F, exp_arg_1134);
+            float negate_arg_1136 = 5.0e-2F * B_1127;
+            float exp_arg_1137 = 0.0F - negate_arg_1136;
+            float res_1138 = fpow32(2.7182817F, exp_arg_1137);
+            float res_1139 = res_1135 * res_1138;
+            float res_1140 = res_1122 * res_1139;
             
             // save map-out results
             {
-                ((__global float *) mem_1973)[dummy_1879 * steps_1286 +
-                                              gtid_1880] = res_1786;
+                ((__global float *) mem_1410)[dummy_1346 * steps_947 +
+                                              gtid_1347] = res_1140;
             }
             // load accumulator
             {
-                x_1531 = x_acc_2039;
+                x_1112 = x_acc_1471;
             }
             // load new values
             {
-                x_1532 = res_1786;
+                x_1113 = res_1140;
             }
             // apply reduction operator
             {
-                float res_1533 = x_1531 + x_1532;
+                float res_1114 = x_1112 + x_1113;
                 
                 // store in accumulator
                 {
-                    x_acc_2039 = res_1533;
+                    x_acc_1471 = res_1114;
                 }
             }
         }
     }
     // to reduce current chunk, first store our result in memory
     {
-        x_1531 = x_acc_2039;
-        ((__local float *) red_arr_mem_2037)[local_tid_2031] = x_1531;
+        x_1112 = x_acc_1471;
+        ((__local float *) red_arr_mem_1469)[local_tid_1463] = x_1112;
     }
-    
-  error_0:
-    barrier(CLK_LOCAL_MEM_FENCE);
-    if (local_failure)
-        return;
     barrier(CLK_LOCAL_MEM_FENCE);
     
-    int32_t offset_2047;
-    int32_t skip_waves_2048;
-    float x_2041;
-    float x_2042;
+    int32_t offset_1478;
+    int32_t skip_waves_1479;
+    float x_1473;
+    float x_1474;
     
-    offset_2047 = 0;
+    offset_1478 = 0;
     // participating threads read initial accumulator
     {
-        if (slt32(local_tid_2031, segred_group_sizze_1873)) {
-            x_2041 = ((__local float *) red_arr_mem_2037)[local_tid_2031 +
-                                                          offset_2047];
+        if (slt32(local_tid_1463, segred_group_sizze_1340)) {
+            x_1473 = ((__local float *) red_arr_mem_1469)[local_tid_1463 +
+                                                          offset_1478];
         }
     }
-    offset_2047 = 1;
-    while (slt32(offset_2047, wave_sizze_2033)) {
-        if (slt32(local_tid_2031 + offset_2047, segred_group_sizze_1873) &&
-            ((local_tid_2031 - squot32(local_tid_2031, wave_sizze_2033) *
-              wave_sizze_2033) & (2 * offset_2047 - 1)) == 0) {
+    offset_1478 = 1;
+    while (slt32(offset_1478, wave_sizze_1465)) {
+        if (slt32(local_tid_1463 + offset_1478, segred_group_sizze_1340) &&
+            ((local_tid_1463 - squot32(local_tid_1463, wave_sizze_1465) *
+              wave_sizze_1465) & (2 * offset_1478 - 1)) == 0) {
             // read array element
             {
-                x_2042 = ((volatile __local
-                           float *) red_arr_mem_2037)[local_tid_2031 +
-                                                      offset_2047];
+                x_1474 = ((volatile __local
+                           float *) red_arr_mem_1469)[local_tid_1463 +
+                                                      offset_1478];
             }
             // apply reduction operation
             {
-                float res_2043 = x_2041 + x_2042;
+                float res_1475 = x_1473 + x_1474;
                 
-                x_2041 = res_2043;
+                x_1473 = res_1475;
             }
             // write result of operation
             {
-                ((volatile __local float *) red_arr_mem_2037)[local_tid_2031] =
-                    x_2041;
+                ((volatile __local float *) red_arr_mem_1469)[local_tid_1463] =
+                    x_1473;
             }
         }
-        offset_2047 *= 2;
+        offset_1478 *= 2;
     }
-    skip_waves_2048 = 1;
-    while (slt32(skip_waves_2048, squot32(segred_group_sizze_1873 +
-                                          wave_sizze_2033 - 1,
-                                          wave_sizze_2033))) {
+    skip_waves_1479 = 1;
+    while (slt32(skip_waves_1479, squot32(segred_group_sizze_1340 +
+                                          wave_sizze_1465 - 1,
+                                          wave_sizze_1465))) {
         barrier(CLK_LOCAL_MEM_FENCE);
-        offset_2047 = skip_waves_2048 * wave_sizze_2033;
-        if (slt32(local_tid_2031 + offset_2047, segred_group_sizze_1873) &&
-            ((local_tid_2031 - squot32(local_tid_2031, wave_sizze_2033) *
-              wave_sizze_2033) == 0 && (squot32(local_tid_2031,
-                                                wave_sizze_2033) & (2 *
-                                                                    skip_waves_2048 -
+        offset_1478 = skip_waves_1479 * wave_sizze_1465;
+        if (slt32(local_tid_1463 + offset_1478, segred_group_sizze_1340) &&
+            ((local_tid_1463 - squot32(local_tid_1463, wave_sizze_1465) *
+              wave_sizze_1465) == 0 && (squot32(local_tid_1463,
+                                                wave_sizze_1465) & (2 *
+                                                                    skip_waves_1479 -
                                                                     1)) == 0)) {
             // read array element
             {
-                x_2042 = ((__local float *) red_arr_mem_2037)[local_tid_2031 +
-                                                              offset_2047];
+                x_1474 = ((__local float *) red_arr_mem_1469)[local_tid_1463 +
+                                                              offset_1478];
             }
             // apply reduction operation
             {
-                float res_2043 = x_2041 + x_2042;
+                float res_1475 = x_1473 + x_1474;
                 
-                x_2041 = res_2043;
+                x_1473 = res_1475;
             }
             // write result of operation
             {
-                ((__local float *) red_arr_mem_2037)[local_tid_2031] = x_2041;
+                ((__local float *) red_arr_mem_1469)[local_tid_1463] = x_1473;
             }
         }
-        skip_waves_2048 *= 2;
+        skip_waves_1479 *= 2;
     }
     barrier(CLK_LOCAL_MEM_FENCE);
     // first thread saves the result in accumulator
     {
-        if (local_tid_2031 == 0) {
-            x_acc_2039 = x_2041;
+        if (local_tid_1463 == 0) {
+            x_acc_1471 = x_1473;
         }
     }
     
-    int32_t old_counter_2049;
+    int32_t old_counter_1480;
     
     // first thread in group saves group result to global memory
     {
-        if (local_tid_2031 == 0) {
-            ((__global float *) group_res_arr_mem_2027)[group_tid_2032 *
-                                                        segred_group_sizze_1873] =
-                x_acc_2039;
+        if (local_tid_1463 == 0) {
+            ((__global float *) group_res_arr_mem_1459)[group_tid_1464 *
+                                                        segred_group_sizze_1340] =
+                x_acc_1471;
             mem_fence_global();
-            old_counter_2049 = atomic_add_i32_global(&((volatile __global
-                                                        int *) counter_mem_2025)[0],
+            old_counter_1480 = atomic_add_i32_global(&((volatile __global
+                                                        int *) counter_mem_1457)[0],
                                                      (int) 1);
-            ((__local bool *) sync_arr_mem_2035)[0] = old_counter_2049 ==
-                num_groups_1875 - 1;
+            ((__local bool *) sync_arr_mem_1467)[0] = old_counter_1480 ==
+                num_groups_1342 - 1;
         }
     }
     barrier(CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE);
     
-    bool is_last_group_2050;
+    bool is_last_group_1481;
     
-    is_last_group_2050 = ((__local bool *) sync_arr_mem_2035)[0];
-    if (is_last_group_2050) {
-        if (local_tid_2031 == 0) {
-            old_counter_2049 = atomic_add_i32_global(&((volatile __global
-                                                        int *) counter_mem_2025)[0],
+    is_last_group_1481 = ((__local bool *) sync_arr_mem_1467)[0];
+    if (is_last_group_1481) {
+        if (local_tid_1463 == 0) {
+            old_counter_1480 = atomic_add_i32_global(&((volatile __global
+                                                        int *) counter_mem_1457)[0],
                                                      (int) (0 -
-                                                            num_groups_1875));
+                                                            num_groups_1342));
         }
         // read in the per-group-results
         {
-            int32_t read_per_thread_2051 = squot32(num_groups_1875 +
-                                                   segred_group_sizze_1873 - 1,
-                                                   segred_group_sizze_1873);
+            int32_t read_per_thread_1482 = squot32(num_groups_1342 +
+                                                   segred_group_sizze_1340 - 1,
+                                                   segred_group_sizze_1340);
             
-            x_1531 = 0.0F;
-            for (int32_t i_2052 = 0; i_2052 < read_per_thread_2051; i_2052++) {
-                int32_t group_res_id_2053 = local_tid_2031 *
-                        read_per_thread_2051 + i_2052;
-                int32_t index_of_group_res_2054 = group_res_id_2053;
+            x_1112 = 0.0F;
+            for (int32_t i_1483 = 0; i_1483 < read_per_thread_1482; i_1483++) {
+                int32_t group_res_id_1484 = local_tid_1463 *
+                        read_per_thread_1482 + i_1483;
+                int32_t index_of_group_res_1485 = group_res_id_1484;
                 
-                if (slt32(group_res_id_2053, num_groups_1875)) {
-                    x_1532 = ((__global
-                               float *) group_res_arr_mem_2027)[index_of_group_res_2054 *
-                                                                segred_group_sizze_1873];
+                if (slt32(group_res_id_1484, num_groups_1342)) {
+                    x_1113 = ((__global
+                               float *) group_res_arr_mem_1459)[index_of_group_res_1485 *
+                                                                segred_group_sizze_1340];
                     
-                    float res_1533;
+                    float res_1114;
                     
-                    res_1533 = x_1531 + x_1532;
-                    x_1531 = res_1533;
+                    res_1114 = x_1112 + x_1113;
+                    x_1112 = res_1114;
                 }
             }
         }
-        ((__local float *) red_arr_mem_2037)[local_tid_2031] = x_1531;
+        ((__local float *) red_arr_mem_1469)[local_tid_1463] = x_1112;
         barrier(CLK_LOCAL_MEM_FENCE);
         // reduce the per-group results
         {
-            int32_t offset_2055;
-            int32_t skip_waves_2056;
-            float x_2041;
-            float x_2042;
+            int32_t offset_1486;
+            int32_t skip_waves_1487;
+            float x_1473;
+            float x_1474;
             
-            offset_2055 = 0;
+            offset_1486 = 0;
             // participating threads read initial accumulator
             {
-                if (slt32(local_tid_2031, segred_group_sizze_1873)) {
-                    x_2041 = ((__local
-                               float *) red_arr_mem_2037)[local_tid_2031 +
-                                                          offset_2055];
+                if (slt32(local_tid_1463, segred_group_sizze_1340)) {
+                    x_1473 = ((__local
+                               float *) red_arr_mem_1469)[local_tid_1463 +
+                                                          offset_1486];
                 }
             }
-            offset_2055 = 1;
-            while (slt32(offset_2055, wave_sizze_2033)) {
-                if (slt32(local_tid_2031 + offset_2055,
-                          segred_group_sizze_1873) && ((local_tid_2031 -
-                                                        squot32(local_tid_2031,
-                                                                wave_sizze_2033) *
-                                                        wave_sizze_2033) & (2 *
-                                                                            offset_2055 -
+            offset_1486 = 1;
+            while (slt32(offset_1486, wave_sizze_1465)) {
+                if (slt32(local_tid_1463 + offset_1486,
+                          segred_group_sizze_1340) && ((local_tid_1463 -
+                                                        squot32(local_tid_1463,
+                                                                wave_sizze_1465) *
+                                                        wave_sizze_1465) & (2 *
+                                                                            offset_1486 -
                                                                             1)) ==
                     0) {
                     // read array element
                     {
-                        x_2042 = ((volatile __local
-                                   float *) red_arr_mem_2037)[local_tid_2031 +
-                                                              offset_2055];
+                        x_1474 = ((volatile __local
+                                   float *) red_arr_mem_1469)[local_tid_1463 +
+                                                              offset_1486];
                     }
                     // apply reduction operation
                     {
-                        float res_2043 = x_2041 + x_2042;
+                        float res_1475 = x_1473 + x_1474;
                         
-                        x_2041 = res_2043;
+                        x_1473 = res_1475;
                     }
                     // write result of operation
                     {
                         ((volatile __local
-                          float *) red_arr_mem_2037)[local_tid_2031] = x_2041;
+                          float *) red_arr_mem_1469)[local_tid_1463] = x_1473;
                     }
                 }
-                offset_2055 *= 2;
+                offset_1486 *= 2;
             }
-            skip_waves_2056 = 1;
-            while (slt32(skip_waves_2056, squot32(segred_group_sizze_1873 +
-                                                  wave_sizze_2033 - 1,
-                                                  wave_sizze_2033))) {
+            skip_waves_1487 = 1;
+            while (slt32(skip_waves_1487, squot32(segred_group_sizze_1340 +
+                                                  wave_sizze_1465 - 1,
+                                                  wave_sizze_1465))) {
                 barrier(CLK_LOCAL_MEM_FENCE);
-                offset_2055 = skip_waves_2056 * wave_sizze_2033;
-                if (slt32(local_tid_2031 + offset_2055,
-                          segred_group_sizze_1873) && ((local_tid_2031 -
-                                                        squot32(local_tid_2031,
-                                                                wave_sizze_2033) *
-                                                        wave_sizze_2033) == 0 &&
-                                                       (squot32(local_tid_2031,
-                                                                wave_sizze_2033) &
-                                                        (2 * skip_waves_2056 -
+                offset_1486 = skip_waves_1487 * wave_sizze_1465;
+                if (slt32(local_tid_1463 + offset_1486,
+                          segred_group_sizze_1340) && ((local_tid_1463 -
+                                                        squot32(local_tid_1463,
+                                                                wave_sizze_1465) *
+                                                        wave_sizze_1465) == 0 &&
+                                                       (squot32(local_tid_1463,
+                                                                wave_sizze_1465) &
+                                                        (2 * skip_waves_1487 -
                                                          1)) == 0)) {
                     // read array element
                     {
-                        x_2042 = ((__local
-                                   float *) red_arr_mem_2037)[local_tid_2031 +
-                                                              offset_2055];
+                        x_1474 = ((__local
+                                   float *) red_arr_mem_1469)[local_tid_1463 +
+                                                              offset_1486];
                     }
                     // apply reduction operation
                     {
-                        float res_2043 = x_2041 + x_2042;
+                        float res_1475 = x_1473 + x_1474;
                         
-                        x_2041 = res_2043;
+                        x_1473 = res_1475;
                     }
                     // write result of operation
                     {
-                        ((__local float *) red_arr_mem_2037)[local_tid_2031] =
-                            x_2041;
+                        ((__local float *) red_arr_mem_1469)[local_tid_1463] =
+                            x_1473;
                     }
                 }
-                skip_waves_2056 *= 2;
+                skip_waves_1487 *= 2;
             }
             // and back to memory with the final result
             {
-                if (local_tid_2031 == 0) {
-                    ((__global float *) mem_1968)[0] = x_2041;
+                if (local_tid_1463 == 0) {
+                    ((__global float *) mem_1405)[0] = x_1473;
                 }
             }
         }
@@ -2252,7 +2521,7 @@ __kernel void segred_nonseg_1881(__global int *global_failure,
     
   error_1:
     return;
-    #undef segred_group_sizze_1873
+    #undef segred_group_sizze_1340
 }
 """
 # Start of values.py.
@@ -3531,11 +3800,8 @@ class cva:
                                                                     cl.device_type.CPU,
                                                                     "threshold",
                                                                     "MAX_COMPUTE_UNITS")]
-    self.global_failure_args_max = 3
-    self.failure_msgs=["Range {}..{}...{} is invalid.\n-> #0  cva.fut:42:30-45\n   #1  cva.fut:50:27-71\n   #2  cva.fut:97:64-89\n   #3  /prelude/soacs.fut:56:19-23\n   #4  /prelude/soacs.fut:56:3-37\n   #5  cva.fut:97:26-106\n   #6  cva.fut:95:21-98:31\n   #7  cva.fut:77:1-102:18\n",
-     "Index [{}] out of bounds for array of shape [{}].\n-> #0  cva.fut:52:38-63\n   #1  cva.fut:97:64-89\n   #2  /prelude/soacs.fut:56:19-23\n   #3  /prelude/soacs.fut:56:3-37\n   #4  cva.fut:97:26-106\n   #5  cva.fut:95:21-98:31\n   #6  cva.fut:77:1-102:18\n",
-     "value cannot match pattern\n-> #0  cva.fut:42:5-44:41\n   #1  cva.fut:50:27-71\n   #2  cva.fut:97:64-89\n   #3  /prelude/soacs.fut:56:19-23\n   #4  /prelude/soacs.fut:56:3-37\n   #5  cva.fut:97:26-106\n   #6  cva.fut:95:21-98:31\n   #7  cva.fut:77:1-102:18\n",
-     "Index [::{}] out of bounds for array of shape [{}].\n-> #0  cva.fut:52:39-59\n   #1  cva.fut:97:64-89\n   #2  /prelude/soacs.fut:56:19-23\n   #3  /prelude/soacs.fut:56:3-37\n   #4  cva.fut:97:26-106\n   #5  cva.fut:95:21-98:31\n   #6  cva.fut:77:1-102:18\n"]
+    self.global_failure_args_max = 0
+    self.failure_msgs=[]
     program = initialise_opencl_object(self,
                                        program_src=fut_opencl_src,
                                        command_queue=command_queue,
@@ -3547,371 +3813,414 @@ class cva:
                                        default_tile_size=default_tile_size,
                                        default_threshold=default_threshold,
                                        size_heuristics=size_heuristics,
-                                       required_types=["i32", "f32", "bool", "cert"],
+                                       required_types=["i32", "f32", "bool"],
                                        user_sizes=sizes,
-                                       all_sizes={"main.group_size_2009": {"class": "group_size", "value": None},
-                                        "main.group_size_2021": {"class": "group_size", "value": None},
-                                        "main.segmap_group_size_1813": {"class": "group_size", "value": None},
-                                        "main.segmap_group_size_1850": {"class": "group_size", "value": None},
-                                        "main.segred_group_size_1872": {"class": "group_size", "value": None},
-                                        "main.segred_num_groups_1874": {"class": "num_groups", "value": None}})
-    self.replicate_2006_var = program.replicate_2006
-    self.replicate_2018_var = program.replicate_2018
-    self.segmap_1808_var = program.segmap_1808
-    self.segmap_1847_var = program.segmap_1847
-    self.segred_nonseg_1881_var = program.segred_nonseg_1881
+                                       all_sizes={"main.segmap_group_size_1165": {"class": "group_size", "value": None},
+                                        "main.segmap_group_size_1235": {"class": "group_size", "value": None},
+                                        "main.segmap_group_size_1280": {"class": "group_size", "value": None},
+                                        "main.segmap_group_size_1317": {"class": "group_size", "value": None},
+                                        "main.segmap_num_groups_1237": {"class": "num_groups", "value": None},
+                                        "main.segred_group_size_1339": {"class": "group_size", "value": None},
+                                        "main.segred_num_groups_1341": {"class": "num_groups", "value": None}})
+    self.map_transpose_f32_var = program.map_transpose_f32
+    self.map_transpose_f32_low_height_var = program.map_transpose_f32_low_height
+    self.map_transpose_f32_low_width_var = program.map_transpose_f32_low_width
+    self.map_transpose_f32_small_var = program.map_transpose_f32_small
+    self.segmap_1160_var = program.segmap_1160
+    self.segmap_1232_var = program.segmap_1232
+    self.segmap_1275_var = program.segmap_1275
+    self.segmap_1314_var = program.segmap_1314
+    self.segred_nonseg_1348_var = program.segred_nonseg_1348
     self.constants = {}
-    counter_mem_2025 = np.array([np.int32(0), np.int32(0), np.int32(0),
+    counter_mem_1457 = np.array([np.int32(0), np.int32(0), np.int32(0),
                                  np.int32(0), np.int32(0), np.int32(0),
                                  np.int32(0), np.int32(0), np.int32(0),
                                  np.int32(0)], dtype=np.int32)
-    static_mem_2063 = opencl_alloc(self, 40, "static_mem_2063")
+    static_mem_1488 = opencl_alloc(self, 40, "static_mem_1488")
     if (40 != 0):
-      cl.enqueue_copy(self.queue, static_mem_2063,
-                      normaliseArray(counter_mem_2025), is_blocking=synchronous)
-    self.counter_mem_2025 = static_mem_2063
-  def futhark_main(self, paths_1285, steps_1286, swap_term_1287, payments_1288,
-                   notional_1289, a_1290, b_1291, sigma_1292, r0_1293):
-    res_1294 = sitofp_i32_f32(payments_1288)
-    duration_1295 = (swap_term_1287 * res_1294)
-    res_1296 = sitofp_i32_f32(steps_1286)
-    sims_per_year_1297 = (res_1296 / duration_1295)
-    bounds_invalid_upwards_1298 = slt32(steps_1286, np.int32(1))
-    distance_upwards_exclusive_1299 = (steps_1286 - np.int32(1))
-    valid_1301 = not(bounds_invalid_upwards_1298)
-    range_valid_c_1302 = True
-    assert valid_1301, ("Error: %s%d%s%d%s%d%s\n\nBacktrace:\n-> #0  cva.fut:58:56-67\n   #1  cva.fut:82:17-40\n   #2  cva.fut:77:1-102:18\n" % ("Range ",
-                                                                                                                                                 np.int32(1),
-                                                                                                                                                 "..",
-                                                                                                                                                 np.int32(2),
-                                                                                                                                                 "...",
-                                                                                                                                                 steps_1286,
-                                                                                                                                                 " is invalid."))
-    steps_1792 = sext_i32_i64(steps_1286)
-    bounds_invalid_upwards_1310 = slt32(paths_1285, np.int32(0))
-    valid_1311 = not(bounds_invalid_upwards_1310)
-    range_valid_c_1312 = True
-    assert valid_1311, ("Error: %s%d%s%d%s%d%s\n\nBacktrace:\n-> #0  /prelude/math.fut:453:23-30\n   #1  /prelude/array.fut:60:3-12\n   #2  lib/github.com/diku-dk/cpprandom/random.fut:174:42-47\n   #3  cva.fut:83:19-49\n   #4  cva.fut:77:1-102:18\n" % ("Range ",
-                                                                                                                                                                                                                                                             np.int32(0),
-                                                                                                                                                                                                                                                             "..",
-                                                                                                                                                                                                                                                             np.int32(1),
-                                                                                                                                                                                                                                                             "..<",
-                                                                                                                                                                                                                                                             paths_1285,
-                                                                                                                                                                                                                                                             " is invalid."))
-    y_1314 = (res_1294 - np.float32(1.0))
-    swap_period_1315 = (swap_term_1287 * y_1314)
-    delta_t_1316 = (duration_1295 / res_1296)
-    paths_1848 = sext_i32_i64(paths_1285)
-    segmap_group_sizze_1851 = self.sizes["main.segmap_group_size_1850"]
-    segmap_group_sizze_1852 = sext_i32_i64(segmap_group_sizze_1851)
-    y_1853 = (segmap_group_sizze_1852 - np.int64(1))
-    x_1854 = (paths_1848 + y_1853)
-    segmap_usable_groups_64_1856 = squot64(x_1854, segmap_group_sizze_1852)
-    segmap_usable_groups_1857 = sext_i64_i32(segmap_usable_groups_64_1856)
-    bytes_1928 = (np.int64(4) * paths_1848)
-    mem_1930 = opencl_alloc(self, bytes_1928, "mem_1930")
-    if ((1 * (np.long(segmap_usable_groups_1857) * np.long(segmap_group_sizze_1851))) != 0):
-      self.segmap_1847_var.set_args(self.global_failure, np.int32(paths_1285),
-                                    mem_1930)
-      cl.enqueue_nd_range_kernel(self.queue, self.segmap_1847_var,
-                                 ((np.long(segmap_usable_groups_1857) * np.long(segmap_group_sizze_1851)),),
-                                 (np.long(segmap_group_sizze_1851),))
+      cl.enqueue_copy(self.queue, static_mem_1488,
+                      normaliseArray(counter_mem_1457), is_blocking=synchronous)
+    self.counter_mem_1457 = static_mem_1488
+  def futhark_main(self, paths_946, steps_947, swap_term_948, payments_949,
+                   notional_950, a_951, b_952, sigma_953, r0_954):
+    res_955 = sitofp_i32_f32(payments_949)
+    x_956 = (swap_term_948 * res_955)
+    res_957 = sitofp_i32_f32(steps_947)
+    dt_958 = (x_956 / res_957)
+    y_959 = (res_955 - np.float32(1.0))
+    last_date_960 = (swap_term_948 * y_959)
+    sims_per_year_961 = (res_957 / x_956)
+    bounds_invalid_upwards_962 = slt32(steps_947, np.int32(1))
+    distance_upwards_exclusive_963 = (steps_947 - np.int32(1))
+    valid_965 = not(bounds_invalid_upwards_962)
+    range_valid_c_966 = True
+    assert valid_965, ("Error: %s%d%s%d%s%d%s\n\nBacktrace:\n-> #0  cva.fut:71:56-67\n   #1  cva.fut:97:17-40\n   #2  cva.fut:90:1-118:18\n" % ("Range ",
+                                                                                                                                                np.int32(1),
+                                                                                                                                                "..",
+                                                                                                                                                np.int32(2),
+                                                                                                                                                "...",
+                                                                                                                                                steps_947,
+                                                                                                                                                " is invalid."))
+    bounds_invalid_upwards_975 = slt32(paths_946, np.int32(0))
+    valid_976 = not(bounds_invalid_upwards_975)
+    range_valid_c_977 = True
+    assert valid_976, ("Error: %s%d%s%d%s%d%s\n\nBacktrace:\n-> #0  /prelude/math.fut:453:23-30\n   #1  /prelude/array.fut:60:3-12\n   #2  lib/github.com/diku-dk/cpprandom/random.fut:174:42-47\n   #3  cva.fut:98:19-49\n   #4  cva.fut:90:1-118:18\n" % ("Range ",
+                                                                                                                                                                                                                                                            np.int32(0),
+                                                                                                                                                                                                                                                            "..",
+                                                                                                                                                                                                                                                            np.int32(1),
+                                                                                                                                                                                                                                                            "..<",
+                                                                                                                                                                                                                                                            paths_946,
+                                                                                                                                                                                                                                                            " is invalid."))
+    res_984 = futhark_sqrt32(dt_958)
+    paths_1315 = sext_i32_i64(paths_946)
+    segmap_group_sizze_1318 = self.sizes["main.segmap_group_size_1317"]
+    segmap_group_sizze_1319 = sext_i32_i64(segmap_group_sizze_1318)
+    y_1320 = (segmap_group_sizze_1319 - np.int64(1))
+    x_1321 = (paths_1315 + y_1320)
+    segmap_usable_groups_64_1323 = squot64(x_1321, segmap_group_sizze_1319)
+    segmap_usable_groups_1324 = sext_i64_i32(segmap_usable_groups_64_1323)
+    bytes_1375 = (np.int64(4) * paths_1315)
+    mem_1377 = opencl_alloc(self, bytes_1375, "mem_1377")
+    if ((1 * (np.long(segmap_usable_groups_1324) * np.long(segmap_group_sizze_1318))) != 0):
+      self.segmap_1314_var.set_args(self.global_failure, np.int32(paths_946),
+                                    mem_1377)
+      cl.enqueue_nd_range_kernel(self.queue, self.segmap_1314_var,
+                                 ((np.long(segmap_usable_groups_1324) * np.long(segmap_group_sizze_1318)),),
+                                 (np.long(segmap_group_sizze_1318),))
       if synchronous:
         sync(self)
-    nest_sizze_1812 = (steps_1792 * paths_1848)
-    segmap_group_sizze_1814 = self.sizes["main.segmap_group_size_1813"]
-    segmap_group_sizze_1815 = sext_i32_i64(segmap_group_sizze_1814)
-    y_1816 = (segmap_group_sizze_1815 - np.int64(1))
-    x_1817 = (nest_sizze_1812 + y_1816)
-    segmap_usable_groups_64_1819 = squot64(x_1817, segmap_group_sizze_1815)
-    segmap_usable_groups_1820 = sext_i64_i32(segmap_usable_groups_64_1819)
-    binop_x_1935 = (steps_1792 * paths_1848)
-    bytes_1932 = (np.int64(4) * binop_x_1935)
-    mem_1936 = opencl_alloc(self, bytes_1932, "mem_1936")
-    if ((1 * (np.long(segmap_usable_groups_1820) * np.long(segmap_group_sizze_1814))) != 0):
-      self.segmap_1808_var.set_args(self.global_failure, np.int32(paths_1285),
-                                    np.int32(steps_1286), mem_1930, mem_1936)
-      cl.enqueue_nd_range_kernel(self.queue, self.segmap_1808_var,
-                                 ((np.long(segmap_usable_groups_1820) * np.long(segmap_group_sizze_1814)),),
-                                 (np.long(segmap_group_sizze_1814),))
+    steps_1277 = sext_i32_i64(steps_947)
+    nest_sizze_1279 = (steps_1277 * paths_1315)
+    segmap_group_sizze_1281 = self.sizes["main.segmap_group_size_1280"]
+    segmap_group_sizze_1282 = sext_i32_i64(segmap_group_sizze_1281)
+    y_1283 = (segmap_group_sizze_1282 - np.int64(1))
+    x_1284 = (nest_sizze_1279 + y_1283)
+    segmap_usable_groups_64_1286 = squot64(x_1284, segmap_group_sizze_1282)
+    segmap_usable_groups_1287 = sext_i64_i32(segmap_usable_groups_64_1286)
+    binop_x_1382 = (steps_1277 * paths_1315)
+    bytes_1379 = (np.int64(4) * binop_x_1382)
+    mem_1383 = opencl_alloc(self, bytes_1379, "mem_1383")
+    if ((1 * (np.long(segmap_usable_groups_1287) * np.long(segmap_group_sizze_1281))) != 0):
+      self.segmap_1275_var.set_args(self.global_failure, np.int32(paths_946),
+                                    np.int32(steps_947), mem_1377, mem_1383)
+      cl.enqueue_nd_range_kernel(self.queue, self.segmap_1275_var,
+                                 ((np.long(segmap_usable_groups_1287) * np.long(segmap_group_sizze_1281)),),
+                                 (np.long(segmap_group_sizze_1281),))
       if synchronous:
         sync(self)
-    mem_1930 = None
-    mem_1941 = opencl_alloc(self, np.int64(0), "mem_1941")
-    mem_1944 = opencl_alloc(self, np.int64(4), "mem_1944")
-    self.futhark_builtinzhreplicate_f32(mem_1944, np.int32(1),
-                                        np.float32(5.000000074505806e-2))
-    res_1361 = futhark_sqrt32(delta_t_1316)
-    mem_1949 = opencl_alloc(self, np.int64(4), "mem_1949")
-    bytes_1954 = (np.int64(4) * steps_1792)
-    mem_1958 = opencl_alloc(self, bytes_1954, "mem_1958")
-    loopz2082Uz2082U_1364 = np.int32(0)
-    xs_mem_1945 = mem_1941
-    i_1366 = np.int32(0)
-    one_2062 = np.int32(1)
-    for counter_2061 in range(paths_1285):
-      loopz2082U_1373 = np.int32(1)
-      x_mem_1946 = mem_1944
-      i_1375 = np.int32(0)
-      one_2060 = np.int32(1)
-      for counter_2059 in range(distance_upwards_exclusive_1299):
-        read_res_2057 = np.empty(1, dtype=ct.c_float)
-        cl.enqueue_copy(self.queue, read_res_2057, mem_1936,
-                        device_offset=(np.long(((i_1366 * steps_1286) + i_1375)) * 4),
-                        is_blocking=synchronous)
-        sync(self)
-        shortstep_arg_1380 = read_res_2057[0]
-        y_1381 = slt32(i_1375, loopz2082U_1373)
-        index_certs_1383 = True
-        assert y_1381, ("Error: %s%d%s%d%s\n\nBacktrace:\n-> #0  cva.fut:67:69-72\n   #1  cva.fut:94:21-66\n   #2  cva.fut:77:1-102:18\n" % ("Index [",
-                                                                                                                                             i_1375,
-                                                                                                                                             "] out of bounds for array of shape [",
-                                                                                                                                             loopz2082U_1373,
-                                                                                                                                             "]."))
-        read_res_2058 = np.empty(1, dtype=ct.c_float)
-        cl.enqueue_copy(self.queue, read_res_2058, x_mem_1946,
-                        device_offset=(np.long(i_1375) * 4),
-                        is_blocking=synchronous)
-        sync(self)
-        shortstep_arg_1384 = read_res_2058[0]
-        y_1385 = (b_1291 - shortstep_arg_1384)
-        x_1386 = (a_1290 * y_1385)
-        x_1387 = (delta_t_1316 * x_1386)
-        x_1388 = (res_1361 * shortstep_arg_1380)
-        y_1389 = (sigma_1292 * x_1388)
-        delta_r_1390 = (x_1387 + y_1389)
-        res_1391 = (shortstep_arg_1384 + delta_r_1390)
-        self.futhark_builtinzhreplicate_f32(mem_1949, np.int32(1), res_1391)
-        conc_tmp_1393 = (np.int32(1) + loopz2082U_1373)
-        binop_x_1951 = sext_i32_i64(conc_tmp_1393)
-        bytes_1950 = (np.int64(4) * binop_x_1951)
-        mem_1952 = opencl_alloc(self, bytes_1950, "mem_1952")
-        tmp_offs_2017 = np.int32(0)
-        if ((sext_i32_i64(loopz2082U_1373) * np.int32(4)) != 0):
-          cl.enqueue_copy(self.queue, mem_1952, x_mem_1946,
-                          dest_offset=np.long((tmp_offs_2017 * np.int32(4))),
-                          src_offset=np.long(np.int32(0)),
-                          byte_count=np.long((sext_i32_i64(loopz2082U_1373) * np.int32(4))))
-        if synchronous:
-          sync(self)
-        tmp_offs_2017 = (tmp_offs_2017 + loopz2082U_1373)
-        if ((sext_i32_i64(np.int32(1)) * np.int32(4)) != 0):
-          cl.enqueue_copy(self.queue, mem_1952, mem_1949,
-                          dest_offset=np.long((tmp_offs_2017 * np.int32(4))),
-                          src_offset=np.long(np.int32(0)),
-                          byte_count=np.long((sext_i32_i64(np.int32(1)) * np.int32(4))))
-        if synchronous:
-          sync(self)
-        tmp_offs_2017 = (tmp_offs_2017 + np.int32(1))
-        loopz2082U_tmp_2014 = conc_tmp_1393
-        x_mem_tmp_2015 = mem_1952
-        loopz2082U_1373 = loopz2082U_tmp_2014
-        x_mem_1946 = x_mem_tmp_2015
-        i_1375 += one_2060
-      sizze_1371 = loopz2082U_1373
-      xs_mem_1953 = x_mem_1946
-      dim_match_1395 = (steps_1286 == sizze_1371)
-      empty_or_match_cert_1396 = True
-      assert dim_match_1395, ("Error: %s%d%s%d%s\n\nBacktrace:\n-> #0  cva.fut:68:8-24\n   #1  cva.fut:94:21-66\n   #2  cva.fut:77:1-102:18\n" % ("Value of (core language) shape (",
-                                                                                                                                                  sizze_1371,
-                                                                                                                                                  ") cannot match shape of type `[",
-                                                                                                                                                  steps_1286,
-                                                                                                                                                  "]f32`."))
-      group_sizze_2021 = self.sizes["main.group_size_2021"]
-      num_groups_2022 = squot32(((steps_1286 + sext_i32_i32(group_sizze_2021)) - np.int32(1)),
-                                sext_i32_i32(group_sizze_2021))
-      if ((1 * (np.long(num_groups_2022) * np.long(group_sizze_2021))) != 0):
-        self.replicate_2018_var.set_args(np.int32(steps_1286), xs_mem_1953,
-                                         mem_1958)
-        cl.enqueue_nd_range_kernel(self.queue, self.replicate_2018_var,
-                                   ((np.long(num_groups_2022) * np.long(group_sizze_2021)),),
-                                   (np.long(group_sizze_2021),))
-        if synchronous:
-          sync(self)
-      xs_mem_1953 = None
-      conc_tmp_1399 = (np.int32(1) + loopz2082Uz2082U_1364)
-      binop_x_1960 = sext_i32_i64(conc_tmp_1399)
-      binop_x_1962 = (steps_1792 * binop_x_1960)
-      bytes_1959 = (np.int64(4) * binop_x_1962)
-      mem_1963 = opencl_alloc(self, bytes_1959, "mem_1963")
-      tmp_offs_2023 = np.int32(0)
-      if ((sext_i32_i64((loopz2082Uz2082U_1364 * steps_1286)) * np.int32(4)) != 0):
-        cl.enqueue_copy(self.queue, mem_1963, xs_mem_1945,
-                        dest_offset=np.long(((steps_1286 * tmp_offs_2023) * np.int32(4))),
-                        src_offset=np.long(np.int32(0)),
-                        byte_count=np.long((sext_i32_i64((loopz2082Uz2082U_1364 * steps_1286)) * np.int32(4))))
+    mem_1377 = None
+    segmap_group_sizze_1236 = self.sizes["main.segmap_group_size_1235"]
+    max_num_groups_1439 = self.sizes["main.segmap_num_groups_1237"]
+    num_groups_1238 = sext_i64_i32(smax64(np.int32(1),
+                                          smin64(squot64(((paths_1315 + sext_i32_i64(segmap_group_sizze_1236)) - np.int64(1)),
+                                                         sext_i32_i64(segmap_group_sizze_1236)),
+                                                 sext_i32_i64(max_num_groups_1439))))
+    convop_x_1385 = (paths_946 * steps_947)
+    binop_x_1386 = sext_i32_i64(convop_x_1385)
+    bytes_1384 = (np.int64(4) * binop_x_1386)
+    mem_1387 = opencl_alloc(self, bytes_1384, "mem_1387")
+    self.futhark_builtinzhmap_transpose_f32(mem_1387, np.int32(0), mem_1383,
+                                            np.int32(0), np.int32(1), steps_947,
+                                            paths_946, (paths_946 * steps_947),
+                                            (paths_946 * steps_947))
+    mem_1383 = None
+    mem_1395 = opencl_alloc(self, bytes_1384, "mem_1395")
+    bytes_1389 = (np.int64(4) * steps_1277)
+    num_threads_1419 = (segmap_group_sizze_1236 * num_groups_1238)
+    num_threads64_1420 = sext_i32_i64(num_threads_1419)
+    total_sizze_1421 = (bytes_1389 * num_threads64_1420)
+    mem_1391 = opencl_alloc(self, total_sizze_1421, "mem_1391")
+    if ((1 * (np.long(num_groups_1238) * np.long(segmap_group_sizze_1236))) != 0):
+      self.segmap_1232_var.set_args(self.global_failure, np.int32(paths_946),
+                                    np.int32(steps_947), np.float32(a_951),
+                                    np.float32(b_952), np.float32(sigma_953),
+                                    np.float32(r0_954), np.float32(dt_958),
+                                    np.int32(distance_upwards_exclusive_963),
+                                    np.float32(res_984),
+                                    np.int32(num_groups_1238), mem_1387,
+                                    mem_1391, mem_1395)
+      cl.enqueue_nd_range_kernel(self.queue, self.segmap_1232_var,
+                                 ((np.long(num_groups_1238) * np.long(segmap_group_sizze_1236)),),
+                                 (np.long(segmap_group_sizze_1236),))
       if synchronous:
         sync(self)
-      tmp_offs_2023 = (tmp_offs_2023 + loopz2082Uz2082U_1364)
-      if ((sext_i32_i64(steps_1286) * np.int32(4)) != 0):
-        cl.enqueue_copy(self.queue, mem_1963, mem_1958,
-                        dest_offset=np.long(((steps_1286 * tmp_offs_2023) * np.int32(4))),
-                        src_offset=np.long(np.int32(0)),
-                        byte_count=np.long((sext_i32_i64(steps_1286) * np.int32(4))))
+    mem_1387 = None
+    mem_1391 = None
+    segmap_group_sizze_1166 = self.sizes["main.segmap_group_size_1165"]
+    segmap_group_sizze_1167 = sext_i32_i64(segmap_group_sizze_1166)
+    y_1168 = (segmap_group_sizze_1167 - np.int64(1))
+    x_1169 = (y_1168 + nest_sizze_1279)
+    segmap_usable_groups_64_1171 = squot64(x_1169, segmap_group_sizze_1167)
+    segmap_usable_groups_1172 = sext_i64_i32(segmap_usable_groups_64_1171)
+    mem_1401 = opencl_alloc(self, bytes_1379, "mem_1401")
+    if ((1 * (np.long(segmap_usable_groups_1172) * np.long(segmap_group_sizze_1166))) != 0):
+      self.segmap_1160_var.set_args(self.global_failure, np.int32(paths_946),
+                                    np.int32(steps_947),
+                                    np.float32(swap_term_948),
+                                    np.float32(notional_950), np.float32(a_951),
+                                    np.float32(b_952), np.float32(sigma_953),
+                                    np.float32(last_date_960),
+                                    np.float32(sims_per_year_961), mem_1395,
+                                    mem_1401)
+      cl.enqueue_nd_range_kernel(self.queue, self.segmap_1160_var,
+                                 ((np.long(segmap_usable_groups_1172) * np.long(segmap_group_sizze_1166)),),
+                                 (np.long(segmap_group_sizze_1166),))
       if synchronous:
         sync(self)
-      tmp_offs_2023 = (tmp_offs_2023 + np.int32(1))
-      loopz2082Uz2082U_tmp_2011 = conc_tmp_1399
-      xs_mem_tmp_2012 = mem_1963
-      loopz2082Uz2082U_1364 = loopz2082Uz2082U_tmp_2011
-      xs_mem_1945 = xs_mem_tmp_2012
-      i_1366 += one_2062
-    sizze_1362 = loopz2082Uz2082U_1364
-    mcs_mem_1964 = xs_mem_1945
-    mem_1936 = None
-    mem_1941 = None
-    mem_1944 = None
-    mem_1949 = None
-    mem_1958 = None
-    x_1518 = fpow32(a_1290, np.float32(2.0))
-    x_1519 = (b_1291 * x_1518)
-    x_1520 = fpow32(sigma_1292, np.float32(2.0))
-    y_1521 = (x_1520 / np.float32(2.0))
-    y_1522 = (x_1519 - y_1521)
-    y_1523 = (np.float32(4.0) * a_1290)
-    segred_group_sizze_1873 = self.sizes["main.segred_group_size_1872"]
-    max_num_groups_2024 = self.sizes["main.segred_num_groups_1874"]
-    num_groups_1875 = sext_i64_i32(smax64(np.int32(1),
-                                          smin64(squot64(((steps_1792 + sext_i32_i64(segred_group_sizze_1873)) - np.int64(1)),
-                                                         sext_i32_i64(segred_group_sizze_1873)),
-                                                 sext_i32_i64(max_num_groups_2024))))
-    x_1762 = (np.float32(5.06298653781414e-2) * swap_term_1287)
-    loop_nonempty_1909 = slt32(np.int32(0), sizze_1362)
-    loop_not_taken_1910 = not(loop_nonempty_1909)
-    mem_1968 = opencl_alloc(self, np.int64(4), "mem_1968")
-    mem_1973 = opencl_alloc(self, bytes_1954, "mem_1973")
-    counter_mem_2025 = self.counter_mem_2025
-    group_res_arr_mem_2027 = opencl_alloc(self,
-                                          (np.int32(4) * (segred_group_sizze_1873 * num_groups_1875)),
-                                          "group_res_arr_mem_2027")
-    num_threads_2029 = (num_groups_1875 * segred_group_sizze_1873)
-    if ((1 * (np.long(num_groups_1875) * np.long(segred_group_sizze_1873))) != 0):
-      self.segred_nonseg_1881_var.set_args(self.global_failure,
-                                           self.failure_is_an_option,
-                                           self.global_failure_args,
-                                           cl.LocalMemory(np.long((np.int32(4) * segred_group_sizze_1873))),
+    mem_1395 = None
+    res_1102 = sitofp_i32_f32(paths_946)
+    x_1103 = fpow32(a_951, np.float32(2.0))
+    x_1104 = (b_952 * x_1103)
+    x_1105 = fpow32(sigma_953, np.float32(2.0))
+    y_1106 = (x_1105 / np.float32(2.0))
+    y_1107 = (x_1104 - y_1106)
+    y_1108 = (np.float32(4.0) * a_951)
+    segred_group_sizze_1340 = self.sizes["main.segred_group_size_1339"]
+    max_num_groups_1456 = self.sizes["main.segred_num_groups_1341"]
+    num_groups_1342 = sext_i64_i32(smax64(np.int32(1),
+                                          smin64(squot64(((steps_1277 + sext_i32_i64(segred_group_sizze_1340)) - np.int64(1)),
+                                                         sext_i32_i64(segred_group_sizze_1340)),
+                                                 sext_i32_i64(max_num_groups_1456))))
+    mem_1405 = opencl_alloc(self, np.int64(4), "mem_1405")
+    mem_1410 = opencl_alloc(self, bytes_1389, "mem_1410")
+    counter_mem_1457 = self.counter_mem_1457
+    group_res_arr_mem_1459 = opencl_alloc(self,
+                                          (np.int32(4) * (segred_group_sizze_1340 * num_groups_1342)),
+                                          "group_res_arr_mem_1459")
+    num_threads_1461 = (num_groups_1342 * segred_group_sizze_1340)
+    if ((1 * (np.long(num_groups_1342) * np.long(segred_group_sizze_1340))) != 0):
+      self.segred_nonseg_1348_var.set_args(self.global_failure,
+                                           cl.LocalMemory(np.long((np.int32(4) * segred_group_sizze_1340))),
                                            cl.LocalMemory(np.long(np.int32(1))),
-                                           np.int32(steps_1286),
-                                           np.float32(swap_term_1287),
-                                           np.int32(payments_1288),
-                                           np.float32(notional_1289),
-                                           np.float32(a_1290),
-                                           np.float32(sims_per_year_1297),
-                                           np.float32(swap_period_1315),
-                                           np.int32(sizze_1362),
-                                           np.float32(x_1518),
-                                           np.float32(x_1520),
-                                           np.float32(y_1522),
-                                           np.float32(y_1523),
-                                           np.float32(x_1762),
-                                           np.int32(num_groups_1875),
-                                           np.byte(loop_not_taken_1910),
-                                           mcs_mem_1964, mem_1968, mem_1973,
-                                           counter_mem_2025,
-                                           group_res_arr_mem_2027,
-                                           np.int32(num_threads_2029))
-      cl.enqueue_nd_range_kernel(self.queue, self.segred_nonseg_1881_var,
-                                 ((np.long(num_groups_1875) * np.long(segred_group_sizze_1873)),),
-                                 (np.long(segred_group_sizze_1873),))
+                                           np.int32(paths_946),
+                                           np.int32(steps_947),
+                                           np.float32(a_951),
+                                           np.float32(sims_per_year_961),
+                                           np.float32(res_1102),
+                                           np.float32(x_1103),
+                                           np.float32(x_1105),
+                                           np.float32(y_1107),
+                                           np.float32(y_1108),
+                                           np.int32(num_groups_1342), mem_1401,
+                                           mem_1405, mem_1410, counter_mem_1457,
+                                           group_res_arr_mem_1459,
+                                           np.int32(num_threads_1461))
+      cl.enqueue_nd_range_kernel(self.queue, self.segred_nonseg_1348_var,
+                                 ((np.long(num_groups_1342) * np.long(segred_group_sizze_1340)),),
+                                 (np.long(segred_group_sizze_1340),))
       if synchronous:
         sync(self)
-    self.failure_is_an_option = np.int32(1)
-    mcs_mem_1964 = None
-    read_res_2064 = np.empty(1, dtype=ct.c_float)
-    cl.enqueue_copy(self.queue, read_res_2064, mem_1968,
+    mem_1401 = None
+    read_res_1489 = np.empty(1, dtype=ct.c_float)
+    cl.enqueue_copy(self.queue, read_res_1489, mem_1405,
                     device_offset=(np.long(np.int32(0)) * 4),
                     is_blocking=synchronous)
     sync(self)
-    res_1529 = read_res_2064[0]
-    mem_1968 = None
-    CVA_1789 = (np.float32(6.000000052154064e-3) * res_1529)
-    mem_1976 = opencl_alloc(self, bytes_1954, "mem_1976")
-    if ((sext_i32_i64(steps_1286) * np.int32(4)) != 0):
-      cl.enqueue_copy(self.queue, mem_1976, mem_1973,
+    res_1110 = read_res_1489[0]
+    mem_1405 = None
+    CVA_1141 = (np.float32(6.000000052154064e-3) * res_1110)
+    mem_1413 = opencl_alloc(self, bytes_1389, "mem_1413")
+    if ((sext_i32_i64(steps_947) * np.int32(4)) != 0):
+      cl.enqueue_copy(self.queue, mem_1413, mem_1410,
                       dest_offset=np.long(np.int32(0)),
                       src_offset=np.long(np.int32(0)),
-                      byte_count=np.long((sext_i32_i64(steps_1286) * np.int32(4))))
+                      byte_count=np.long((sext_i32_i64(steps_947) * np.int32(4))))
     if synchronous:
       sync(self)
-    mem_1973 = None
-    out_arrsizze_1990 = steps_1286
-    out_mem_1989 = mem_1976
-    scalar_out_1991 = CVA_1789
-    return (out_mem_1989, out_arrsizze_1990, scalar_out_1991)
-  def futhark_builtinzhreplicate_f32(self, mem_2002, num_elems_2003, val_2004):
-    group_sizze_2009 = self.sizes["main.group_size_2009"]
-    num_groups_2010 = squot32(((num_elems_2003 + sext_i32_i32(group_sizze_2009)) - np.int32(1)),
-                              sext_i32_i32(group_sizze_2009))
-    if ((1 * (np.long(num_groups_2010) * np.long(group_sizze_2009))) != 0):
-      self.replicate_2006_var.set_args(mem_2002, np.int32(num_elems_2003),
-                                       np.float32(val_2004))
-      cl.enqueue_nd_range_kernel(self.queue, self.replicate_2006_var,
-                                 ((np.long(num_groups_2010) * np.long(group_sizze_2009)),),
-                                 (np.long(group_sizze_2009),))
-      if synchronous:
-        sync(self)
+    mem_1410 = None
+    out_arrsizze_1427 = steps_947
+    out_mem_1426 = mem_1413
+    scalar_out_1428 = CVA_1141
+    return (out_mem_1426, out_arrsizze_1427, scalar_out_1428)
+  def futhark_builtinzhmap_transpose_f32(self, destmem_0, destoffset_1,
+                                         srcmem_2, srcoffset_3, num_arrays_4,
+                                         x_elems_5, y_elems_6, in_elems_7,
+                                         out_elems_8):
+    if ((num_arrays_4 == np.int32(0)) or ((x_elems_5 == np.int32(0)) or (y_elems_6 == np.int32(0)))):
+      pass
+    else:
+      muly_10 = squot32(np.int32(16), x_elems_5)
+      mulx_9 = squot32(np.int32(16), y_elems_6)
+      if ((in_elems_7 == out_elems_8) and (((num_arrays_4 == np.int32(1)) or ((x_elems_5 * y_elems_6) == in_elems_7)) and ((x_elems_5 == np.int32(1)) or (y_elems_6 == np.int32(1))))):
+        if ((in_elems_7 * np.int32(4)) != 0):
+          cl.enqueue_copy(self.queue, destmem_0, srcmem_2,
+                          dest_offset=np.long(destoffset_1),
+                          src_offset=np.long(srcoffset_3),
+                          byte_count=np.long((in_elems_7 * np.int32(4))))
+        if synchronous:
+          sync(self)
+      else:
+        if (sle32(x_elems_5, np.int32(8)) and slt32(np.int32(16), y_elems_6)):
+          if ((((1 * (np.long(squot32(((x_elems_5 + np.int32(16)) - np.int32(1)),
+                                      np.int32(16))) * np.long(np.int32(16)))) * (np.long(squot32(((squot32(((y_elems_6 + muly_10) - np.int32(1)),
+                                                                                                            muly_10) + np.int32(16)) - np.int32(1)),
+                                                                                                  np.int32(16))) * np.long(np.int32(16)))) * (np.long(num_arrays_4) * np.long(np.int32(1)))) != 0):
+            self.map_transpose_f32_low_width_var.set_args(cl.LocalMemory(np.long(np.int32(1088))),
+                                                          np.int32(destoffset_1),
+                                                          np.int32(srcoffset_3),
+                                                          np.int32(num_arrays_4),
+                                                          np.int32(x_elems_5),
+                                                          np.int32(y_elems_6),
+                                                          np.int32(in_elems_7),
+                                                          np.int32(out_elems_8),
+                                                          np.int32(mulx_9),
+                                                          np.int32(muly_10),
+                                                          destmem_0, srcmem_2)
+            cl.enqueue_nd_range_kernel(self.queue,
+                                       self.map_transpose_f32_low_width_var,
+                                       ((np.long(squot32(((x_elems_5 + np.int32(16)) - np.int32(1)),
+                                                         np.int32(16))) * np.long(np.int32(16))),
+                                        (np.long(squot32(((squot32(((y_elems_6 + muly_10) - np.int32(1)),
+                                                                   muly_10) + np.int32(16)) - np.int32(1)),
+                                                         np.int32(16))) * np.long(np.int32(16))),
+                                        (np.long(num_arrays_4) * np.long(np.int32(1)))),
+                                       (np.long(np.int32(16)),
+                                        np.long(np.int32(16)),
+                                        np.long(np.int32(1))))
+            if synchronous:
+              sync(self)
+        else:
+          if (sle32(y_elems_6, np.int32(8)) and slt32(np.int32(16), x_elems_5)):
+            if ((((1 * (np.long(squot32(((squot32(((x_elems_5 + mulx_9) - np.int32(1)),
+                                                  mulx_9) + np.int32(16)) - np.int32(1)),
+                                        np.int32(16))) * np.long(np.int32(16)))) * (np.long(squot32(((y_elems_6 + np.int32(16)) - np.int32(1)),
+                                                                                                    np.int32(16))) * np.long(np.int32(16)))) * (np.long(num_arrays_4) * np.long(np.int32(1)))) != 0):
+              self.map_transpose_f32_low_height_var.set_args(cl.LocalMemory(np.long(np.int32(1088))),
+                                                             np.int32(destoffset_1),
+                                                             np.int32(srcoffset_3),
+                                                             np.int32(num_arrays_4),
+                                                             np.int32(x_elems_5),
+                                                             np.int32(y_elems_6),
+                                                             np.int32(in_elems_7),
+                                                             np.int32(out_elems_8),
+                                                             np.int32(mulx_9),
+                                                             np.int32(muly_10),
+                                                             destmem_0,
+                                                             srcmem_2)
+              cl.enqueue_nd_range_kernel(self.queue,
+                                         self.map_transpose_f32_low_height_var,
+                                         ((np.long(squot32(((squot32(((x_elems_5 + mulx_9) - np.int32(1)),
+                                                                     mulx_9) + np.int32(16)) - np.int32(1)),
+                                                           np.int32(16))) * np.long(np.int32(16))),
+                                          (np.long(squot32(((y_elems_6 + np.int32(16)) - np.int32(1)),
+                                                           np.int32(16))) * np.long(np.int32(16))),
+                                          (np.long(num_arrays_4) * np.long(np.int32(1)))),
+                                         (np.long(np.int32(16)),
+                                          np.long(np.int32(16)),
+                                          np.long(np.int32(1))))
+              if synchronous:
+                sync(self)
+          else:
+            if (sle32(x_elems_5, np.int32(8)) and sle32(y_elems_6,
+                                                        np.int32(8))):
+              if ((1 * (np.long(squot32(((((num_arrays_4 * x_elems_5) * y_elems_6) + np.int32(256)) - np.int32(1)),
+                                        np.int32(256))) * np.long(np.int32(256)))) != 0):
+                self.map_transpose_f32_small_var.set_args(cl.LocalMemory(np.long(np.int32(1))),
+                                                          np.int32(destoffset_1),
+                                                          np.int32(srcoffset_3),
+                                                          np.int32(num_arrays_4),
+                                                          np.int32(x_elems_5),
+                                                          np.int32(y_elems_6),
+                                                          np.int32(in_elems_7),
+                                                          np.int32(out_elems_8),
+                                                          np.int32(mulx_9),
+                                                          np.int32(muly_10),
+                                                          destmem_0, srcmem_2)
+                cl.enqueue_nd_range_kernel(self.queue,
+                                           self.map_transpose_f32_small_var,
+                                           ((np.long(squot32(((((num_arrays_4 * x_elems_5) * y_elems_6) + np.int32(256)) - np.int32(1)),
+                                                             np.int32(256))) * np.long(np.int32(256))),),
+                                           (np.long(np.int32(256)),))
+                if synchronous:
+                  sync(self)
+            else:
+              if ((((1 * (np.long(squot32(((x_elems_5 + np.int32(32)) - np.int32(1)),
+                                          np.int32(32))) * np.long(np.int32(32)))) * (np.long(squot32(((y_elems_6 + np.int32(32)) - np.int32(1)),
+                                                                                                      np.int32(32))) * np.long(np.int32(8)))) * (np.long(num_arrays_4) * np.long(np.int32(1)))) != 0):
+                self.map_transpose_f32_var.set_args(cl.LocalMemory(np.long(np.int32(4224))),
+                                                    np.int32(destoffset_1),
+                                                    np.int32(srcoffset_3),
+                                                    np.int32(num_arrays_4),
+                                                    np.int32(x_elems_5),
+                                                    np.int32(y_elems_6),
+                                                    np.int32(in_elems_7),
+                                                    np.int32(out_elems_8),
+                                                    np.int32(mulx_9),
+                                                    np.int32(muly_10),
+                                                    destmem_0, srcmem_2)
+                cl.enqueue_nd_range_kernel(self.queue,
+                                           self.map_transpose_f32_var,
+                                           ((np.long(squot32(((x_elems_5 + np.int32(32)) - np.int32(1)),
+                                                             np.int32(32))) * np.long(np.int32(32))),
+                                            (np.long(squot32(((y_elems_6 + np.int32(32)) - np.int32(1)),
+                                                             np.int32(32))) * np.long(np.int32(8))),
+                                            (np.long(num_arrays_4) * np.long(np.int32(1)))),
+                                           (np.long(np.int32(32)),
+                                            np.long(np.int32(8)),
+                                            np.long(np.int32(1))))
+                if synchronous:
+                  sync(self)
     return ()
-  def main(self, paths_1285_ext, steps_1286_ext, swap_term_1287_ext,
-           payments_1288_ext, notional_1289_ext, a_1290_ext, b_1291_ext,
-           sigma_1292_ext, r0_1293_ext):
+  def main(self, paths_946_ext, steps_947_ext, swap_term_948_ext,
+           payments_949_ext, notional_950_ext, a_951_ext, b_952_ext,
+           sigma_953_ext, r0_954_ext):
     try:
-      paths_1285 = np.int32(ct.c_int32(paths_1285_ext))
+      paths_946 = np.int32(ct.c_int32(paths_946_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #0 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("i32",
-                                                                                                                            type(paths_1285_ext),
-                                                                                                                            paths_1285_ext))
+                                                                                                                            type(paths_946_ext),
+                                                                                                                            paths_946_ext))
     try:
-      steps_1286 = np.int32(ct.c_int32(steps_1286_ext))
+      steps_947 = np.int32(ct.c_int32(steps_947_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #1 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("i32",
-                                                                                                                            type(steps_1286_ext),
-                                                                                                                            steps_1286_ext))
+                                                                                                                            type(steps_947_ext),
+                                                                                                                            steps_947_ext))
     try:
-      swap_term_1287 = np.float32(ct.c_float(swap_term_1287_ext))
+      swap_term_948 = np.float32(ct.c_float(swap_term_948_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #2 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("f32",
-                                                                                                                            type(swap_term_1287_ext),
-                                                                                                                            swap_term_1287_ext))
+                                                                                                                            type(swap_term_948_ext),
+                                                                                                                            swap_term_948_ext))
     try:
-      payments_1288 = np.int32(ct.c_int32(payments_1288_ext))
+      payments_949 = np.int32(ct.c_int32(payments_949_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #3 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("i32",
-                                                                                                                            type(payments_1288_ext),
-                                                                                                                            payments_1288_ext))
+                                                                                                                            type(payments_949_ext),
+                                                                                                                            payments_949_ext))
     try:
-      notional_1289 = np.float32(ct.c_float(notional_1289_ext))
+      notional_950 = np.float32(ct.c_float(notional_950_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #4 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("f32",
-                                                                                                                            type(notional_1289_ext),
-                                                                                                                            notional_1289_ext))
+                                                                                                                            type(notional_950_ext),
+                                                                                                                            notional_950_ext))
     try:
-      a_1290 = np.float32(ct.c_float(a_1290_ext))
+      a_951 = np.float32(ct.c_float(a_951_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #5 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("f32",
-                                                                                                                            type(a_1290_ext),
-                                                                                                                            a_1290_ext))
+                                                                                                                            type(a_951_ext),
+                                                                                                                            a_951_ext))
     try:
-      b_1291 = np.float32(ct.c_float(b_1291_ext))
+      b_952 = np.float32(ct.c_float(b_952_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #6 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("f32",
-                                                                                                                            type(b_1291_ext),
-                                                                                                                            b_1291_ext))
+                                                                                                                            type(b_952_ext),
+                                                                                                                            b_952_ext))
     try:
-      sigma_1292 = np.float32(ct.c_float(sigma_1292_ext))
+      sigma_953 = np.float32(ct.c_float(sigma_953_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #7 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("f32",
-                                                                                                                            type(sigma_1292_ext),
-                                                                                                                            sigma_1292_ext))
+                                                                                                                            type(sigma_953_ext),
+                                                                                                                            sigma_953_ext))
     try:
-      r0_1293 = np.float32(ct.c_float(r0_1293_ext))
+      r0_954 = np.float32(ct.c_float(r0_954_ext))
     except (TypeError, AssertionError) as e:
       raise TypeError("Argument #8 has invalid value\nFuthark type: {}\nArgument has Python type {} and value: {}\n".format("f32",
-                                                                                                                            type(r0_1293_ext),
-                                                                                                                            r0_1293_ext))
-    (out_mem_1989, out_arrsizze_1990,
-     scalar_out_1991) = self.futhark_main(paths_1285, steps_1286,
-                                          swap_term_1287, payments_1288,
-                                          notional_1289, a_1290, b_1291,
-                                          sigma_1292, r0_1293)
-    return (cl.array.Array(self.queue, (out_arrsizze_1990,), ct.c_float,
-                           data=out_mem_1989), np.float32(scalar_out_1991))
+                                                                                                                            type(r0_954_ext),
+                                                                                                                            r0_954_ext))
+    (out_mem_1426, out_arrsizze_1427,
+     scalar_out_1428) = self.futhark_main(paths_946, steps_947, swap_term_948,
+                                          payments_949, notional_950, a_951,
+                                          b_952, sigma_953, r0_954)
+    return (cl.array.Array(self.queue, (out_arrsizze_1427,), ct.c_float,
+                           data=out_mem_1426), np.float32(scalar_out_1428))
