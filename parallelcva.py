@@ -5,11 +5,11 @@ import random
 import time
 from scipy import integrate
 
-paths = 100000
-steps = 1000
+paths = 1000000
+steps = 100
 
 swap_term = 0.5
-payments = 50
+payments = 20
 notional = 1
 
 
