@@ -1,4 +1,5 @@
 require {
-  github.com/diku-dk/cpprandom 1.2.1 #869304710af3a023683d6670316d55dafd973c71
-  github.com/athas/fibs 1.0.1 #3bc391cef7363623738fb1fdf965a7b97be7164a
+  github.com/diku-dk/cpprandom 1.3.0 #68b67cb55242db59b79d94b5cdf961b2d654e698
+  github.com/athas/fibs 1.1.0 #b06815a0fd7cdad456fc4ad7e5ec6d97cb858a2c
+  github.com/diku-dk/segmented 0.4.0 #87080c975603fe49937f911855c0aa3aa821469b
 }

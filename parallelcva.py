@@ -5,8 +5,8 @@ import random
 import time
 from scipy import integrate
 
-paths = 1000000
-steps = 100
+paths = 100000
+steps = 1000
 
 swap_term = 0.5
 payments = 20
@@ -22,12 +22,11 @@ r0 = 0.05
 start = time.time()
 m = cva.cva()
 exposures = m.main(paths,steps, swap_term, payments, notional, a, b, sigma, r0)
-print(exposures[1])
 x = np.arange(0,10,0.1)
 print(f"Time takenL: {time.time() - start}")
 
 # print(integrate.trapz(x,exposures))
-plt.plot(exposures[0].get())
+plt.plot(exposures[1].get())
 plt.show()
 # for i in range(10):
 #     plt.plot(exposures[i],lw=0.8, alpha=0.8)
