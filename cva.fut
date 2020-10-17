@@ -123,16 +123,31 @@ entry main (paths:i64) (steps:i64) (swap_term: f32) (payments: i64) (notional:f3
     let shortrates = map(\x -> mc_shortrate vasicek r0 steps x) rands
 
     --Portfolio evaluation for each scenario
-    let pricings = map(\x -> map2(\y z ->
-                    let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
-                    in pricing) x times) shortrates
-    let avgexp = map (\x ->
-                     let expanded = expand_outer_reduce pricing_size pricing_get (+) 0 x
-                     let pfe = map (\y -> f32.max 0 y) expanded
-                     in (reduce(+) 0 pfe)/(f32.i64 paths)) (transpose pricings)
+
+    -- Three approaches
+    -- First approach - create a pricings 2d array before, and map over
+    -- let pricings = map(\x -> map2(\y z ->
+    --                 let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
+    --                 in pricing) x times) shortrates
+    -- let avgexp = map (\x ->
+    --                  let expanded = expand_reduce pricing_size pricing_get (+) 0 x :> [paths] f32
+    --                  let pfe = map (\y -> f32.max 0 y) expanded
+    --                  in (reduce(+) 0 pfe)/(f32.i64 paths) (transpose pricings)
+
+    -- Second approach - Create pricing array within map, to reduce intermediate arrays
+    let avgexp = map2 (\xs time ->
+                    let pricings: [] Pricing = map(\x-> {swap = swap, vasicek=vasicek,t = time, r = x}) xs
+                    let expanded = expand_reduce pricing_size pricing_get (+) 0 pricings
+                    let pfe = map (\y -> f32.max 0 y) expanded
+                    in (reduce(+) 0 pfe)/(f32.i64 paths)
+                ) (transpose shortrates) times
+
+    -- Third approach - dynamic memory (probably sequential execution)
     -- let exposures = map(\x ->
     --                     map2 (\y z -> f32.max 0 ( if z > last_date then 0 else swapprice swap vasicek y z)) x times) shortrates
     -- let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
+
+
     -- Exposure averaging and CVA calculation
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
     let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
