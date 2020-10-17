@@ -6,12 +6,12 @@ import time
 from scipy import integrate
 
 paths = 100000
-steps = 1000
+steps = 100
 
-swap_term = 0.5
-payments = 20
-notional = 1
-
+swap_term = np.array([1,0.5], dtype=np.float32)
+payments =  np.array([10,20], dtype=np.int64)
+notional =  np.array([1,1], dtype=np.float32)
+netting =  np.array([1,-1], dtype=np.int64)
 
 a = 0.01
 b = 0.05
@@ -21,12 +21,10 @@ r0 = 0.05
 
 start = time.time()
 m = cva.cva()
-exposures = m.main(paths,steps, swap_term, payments, notional, a, b, sigma, r0)
-x = np.arange(0,10,0.1)
-print(f"Time takenL: {time.time() - start}")
+exposures = m.main(paths,steps,netting, swap_term, payments, notional, a, b, sigma, r0)
 
-# print(integrate.trapz(x,exposures))
+print(f"Time takenL: {time.time() - start}")
+print(exposures[0])
+
 plt.plot(exposures[1].get())
 plt.show()
-# for i in range(10):
-#     plt.plot(exposures[i],lw=0.8, alpha=0.8)
