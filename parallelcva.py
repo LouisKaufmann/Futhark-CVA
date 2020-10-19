@@ -5,12 +5,12 @@ import random
 import time
 from scipy import integrate
 
-paths = 100000
+paths = 1000000
 steps = 100
 
 swap_term = np.array([1,0.5], dtype=np.float32)
-payments =  np.array([10,20], dtype=np.int64)
-notional =  np.array([1,1], dtype=np.float32)
+payments =  np.array([50,20], dtype=np.int64)
+notional =  np.array([1,-0.5], dtype=np.float32)
 
 a = 0.01
 b = 0.05
@@ -22,7 +22,7 @@ start = time.time()
 m = cva.cva()
 exposures = m.main(paths,steps, swap_term, payments, notional, a, b, sigma, r0)
 
-print(f"Time takenL: {time.time() - start}")
+print(f"Time taken: {time.time() - start}")
 print(exposures[0])
 
 plt.plot(exposures[1].get())
