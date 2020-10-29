@@ -179,3 +179,11 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
     let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
     in (CVA, avgexp)
+
+-- ==
+-- entry: test
+-- input {  1000i64 100i64 }
+-- input { 10000i64 100i64 }
+
+entry test (paths:i64) (steps:i64) : f32 =
+  main paths steps [1,0.5] [10,20] [1,-0.5] 0.01 0.05 0.001 0.05 |> (.0)
