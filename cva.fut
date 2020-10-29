@@ -90,13 +90,6 @@ let pricing_get (pricing:Pricing) (i : i64) : f32=
     let price = bondprice pricing.vasicek pricing.r pricing.t (start + (f32.i64 i)*pricing.swap.term)
     in coef * price
 
-let pricing_arr_get [n] (pricing_arr : [n] Pricing) (i : i64) : f32=
-    let a = expand_outer_reduce pricing_size pricing_get (+) 0 (pricing_arr)
-    in a[i]
-
-let pricing_arr_size (pricing_arr: [] Pricing) : i64=
-    length pricing_arr
-
 -- Set the fixed rate, given a swap term, number of payments and a vasicek model
 let set_fixed_rate (swap_term: f32) (swap_payments: i64) (vasicek:Vasicek) : f32 =
     let payment_dates = gen_payment_dates swap_payments swap_term
@@ -130,50 +123,27 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
     let shortrates = map(\x -> mc_shortrate vasicek r0 steps x) rands
     -- --Portfolio evaluation for each scenario
 
-    -- -- Three approaches
-    -- -- First approach - create a pricings 2d array before, and map over
-    -- let pricings = map(\x -> map2(\y z ->
-    --                 let pricing : Pricing = {swap = swaps[0], vasicek=vasicek,t = z, r = y}
-    --                 in pricing) x times) shortrates
-    -- let pricings = map(\swap -> map(\x -> map2(\y z ->
-                    -- let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
-                    -- in pricing) x times) shortrates) swaps
-    -- let avgexp = map (\x ->
-    --                  let expanded = expand_outer_reduce pricing_size pricing_get (+) 0 x
-    --                  let pfe = map (\y -> f32.max 0 y) expanded
-    --                  in (reduce(+) 0 pfe)/(f32.i64 paths)) (transpose pricings)
+    let pricings : [paths] [steps] [n] Pricing = map(\x -> map2(\y z ->
+                    map(\swap ->
+                    let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
+                    in pricing) swaps) x times) shortrates
+    let flattened = flatten_3d pricings
+    let prices = expand_outer_reduce pricing_size pricing_get (+) 0 flattened
+    let unflattened : [paths] [steps] [n] f32 = unflatten_3d paths steps n prices
+    let transposed : [steps] [paths] [n] f32 = transpose unflattened
 
+    let avgexp = map (\(xs : [paths] [n] f32) : f32->
+                    let netted : [paths] f32 = map(\(x : [n] f32 )-> reduce (+) 0 x) (xs)
+                    let pfe = map (\x -> f32.max 0 x) netted
+                    in (reduce(+) 0 pfe)/(f32.i64 paths)
+                ) (transposed)
 
-
-    -- -- Second approach - Create pricing array within map, to reduce intermediate arrays
-    -- let pricings : [paths] [steps] [n] Pricing = map(\x -> map2(\y z ->
-    --                 map(\swap ->
-    --                 let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
-    --                 in pricing) swaps) x times) shortrates
-    -- let flattened = flatten_3d pricings
-    -- let prices = expand_outer_reduce pricing_size pricing_get (+) 0 flattened
-    -- let unflattened : [paths] [steps] [n] f32 = unflatten_3d paths steps n prices
-    -- let transposed : [steps] [paths] [n] f32 = transpose unflattened
-
-    -- let avgexp = map (\(xs : [paths] [n] f32) : f32->
-    --                 let netted : [paths] f32 = map(\(x : [n] f32 )-> reduce (+) 0 x) (xs)
-    --                 let pfe = map (\x -> f32.max 0 x) netted
-    --                 in (reduce(+) 0 pfe)/(f32.i64 paths)
-    --             ) (transposed)
-
-    -- let avgexp = map2 (\xs time ->
-    --             let pricing: [] Pricing = map(\x-> {swap = swaps[0], vasicek=vasicek,t = time, r = x}) xs
-    --             let expanded = expand_reduce pricing_size pricing_get (+) 0 pricing :> [paths] f32
-    --             let pfe = map (\y -> f32.max 0 y) expanded
-    --             in (reduce(+) 0 pfe)/(f32.i64 paths)
-    --         ) (transpose shortrates) times
-
-
-    --  -- Third approach - dynamic memory (probably sequential execution)
-    let exposures = map(\x ->
-                        map2 (\y z -> f32.max 0 ( if z > last_date then 0 else swapprice swaps[0] vasicek y z)) x times) shortrates
-    let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
-
+    -- Dynamic memory approach (probably sequential execution)
+    -- let exposures = map(\x ->
+    --                     map2 (\y z -> f32.max 0 ( if z > last_date then 0 else
+    --                      reduce (+) 0(map swapprice swaps[0] vasicek y z)
+    --                      ) x times) shortrates
+    -- let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
 
     -- -- Exposure averaging and CVA calculation
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
@@ -186,4 +156,4 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
 -- input { 10000i64 100i64 }
 
 entry test (paths:i64) (steps:i64) : f32 =
-  main paths steps [1,0.5] [10,20] [1,-0.5] 0.01 0.05 0.001 0.05 |> (.0)
+  main paths steps [1,0.5,0.25,0.1,0.3,0.1,2,3,1] [10,20,5,5,50,20,30,15,18] [1,-0.5,1,1,1,1,1,1,1] 0.01 0.05 0.001 0.05 |> (.0)
