@@ -147,8 +147,10 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
 
     -- Dynamic memory approach (probably sequential execution)
     let exposures = map(\x ->
-                        map2 (\y z -> f32.max 0 ( if z > last_date then 0 else
-                         reduce (+) 0(map swapprice swaps[0] vasicek y z)
+                        map2 (\y z -> f32.max 0 (
+                         reduce (+) 0 (map (\swap -> 
+                            if z > swap.term *f32.i64(swap.payments - 1) then 0 
+                            else swapprice swap vasicek y z) swaps))
                          ) x times) shortrates
     let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
 
