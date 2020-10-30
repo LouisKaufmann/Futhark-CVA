@@ -28,4 +28,4 @@ cva-o.out: cva-o.exe
 
 .PHONY: clean
 clean:
-	rm -rf *~ *.exe *.c *.pyc __pycache__ cva.py runtime out.fut cva *.out
+	rm -rf *~ *.exe *.c *.pyc __pycache__ cva.py runtime out.fut cva cva2 cvaold *.out
