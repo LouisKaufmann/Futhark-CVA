@@ -123,20 +123,27 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
     let shortrates = map(\x -> mc_shortrate vasicek r0 steps x) rands
     -- --Portfolio evaluation for each scenario
 
-    let pricings : [paths] [steps] [n] Pricing = map(\x -> map2(\y z ->
-                    map(\swap ->
-                    let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
-                    in pricing) swaps) x times) shortrates
-    let flattened = flatten_3d pricings
-    let prices = expand_outer_reduce pricing_size pricing_get (+) 0 flattened
-    let unflattened : [paths] [steps] [n] f32 = unflatten_3d paths steps n prices
-    let transposed : [steps] [paths] [n] f32 = transpose unflattened
+    let prices : [steps] [paths] [n] f32 = map2(\x z-> 
+                        let pricings = map(\y ->
+                            map(\swap ->
+                                let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
+                                in pricing
+                            ) swaps) x
+                        let flattened = flatten pricings
+                        let prices = expand_outer_reduce pricing_size pricing_get (+) 0 flattened
+                        let unflattened : [paths] [n] f32 = unflatten paths n prices
+                        in unflattened
+                    ) (transpose shortrates) times
+    -- let flattened = flatten_3d pricings
+    -- let prices = expand_outer_reduce pricing_size pricing_get (+) 0 flattened
+    -- let unflattened : [paths] [steps] [n] f32 = unflatten_3d paths steps n prices
+    -- let transposed : [steps] [paths] [n] f32 = transpose unflattened
 
     let avgexp = map (\(xs : [paths] [n] f32) : f32->
                     let netted : [paths] f32 = map(\(x : [n] f32 )-> reduce (+) 0 x) (xs)
                     let pfe = map (\x -> f32.max 0 x) netted
                     in (reduce(+) 0 pfe)/(f32.i64 paths)
-                ) (transposed)
+                ) (prices)
 
     -- Dynamic memory approach (probably sequential execution)
     -- let exposures = map(\x ->
@@ -153,7 +160,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
 -- ==
 -- entry: test
 -- input {  1000i64 100i64 }
--- input { 10000i64 100i64 }
+-- input { 100000i64 500i64 }
 
 entry test (paths:i64) (steps:i64) : f32 =
   main paths steps [1,0.5,0.25,0.1,0.3,0.1,2,3,1] [10,20,5,5,50,20,30,15,18] [1,-0.5,1,1,1,1,1,1,1] 0.01 0.05 0.001 0.05 |> (.0)
