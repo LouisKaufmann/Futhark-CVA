@@ -127,15 +127,15 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                         map2 (\y z ->
                         let exp = map (\swap ->
                             if z > swap.term *f32.i64(swap.payments - 1) then 0
-                            else swapprice swap vasicek y z) swaps
+                            else swap.notional * (swapprice swap vasicek y z)) swaps
                         let netted = reduce (+) 0 exp
                         let pfe = f32.max 0 netted
                         in pfe
                         ) x times) shortrates
-    let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
+    let avgexp = map(\xs -> (reduce (+) 0 xs)/(f32.i64 paths)) (transpose exposures)
     -- -- Exposure averaging and CVA calculation
-    -- let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
-    -- let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
+    let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
+    let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
     let prices : [steps] [paths] [n] f32 = map2(\x z->
                         let pricings = map(\y ->
                             map(\swap ->
@@ -148,12 +148,12 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                         in unflattened
                     ) (transpose shortrates) times
     let avgexp2 = map (\(xs : [paths] [n] f32) : f32->
-                    let netted : [paths] f32 = map(\(x : [n] f32 )-> reduce (+) 0 x) (xs)
+                    let netted : [paths] f32 = map(\x-> reduce (+) 0 x) (xs)
                     let pfe = map (\x -> f32.max 0 x) netted
-                    in (reduce(+) 0 pfe)/(f32.i64 paths)
+                    in (reduce (+) 0 pfe)/(f32.i64 paths)
                 ) (prices)
     -- let avgexp2 = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
-    in (avgexp , avgexp2)
+    in (CVA,avgexp)
 
 -- ==
 -- entry: test

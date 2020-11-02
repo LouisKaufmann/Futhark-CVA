@@ -135,7 +135,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                         in unflattened
                     ) (transpose shortrates) times
     let avgexp = map (\(xs : [paths] [n] f32) : f32->
-                    let netted : [paths] f32 = map(\(x : [n] f32 )-> reduce (+) 0 x) (xs)
+                    let netted : [paths] f32 = map(\x-> reduce (+) 0 x) (xs)
                     let pfe = map (\x -> f32.max 0 x) netted
                     in (reduce(+) 0 pfe)/(f32.i64 paths)
                 ) (prices)
