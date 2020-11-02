@@ -123,7 +123,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
     let shortrates = map(\x -> mc_shortrate vasicek r0 steps x) rands
     -- --Portfolio evaluation for each scenario
 
-    let prices : [steps] [paths] [n] f32 = map2(\x z-> 
+    let prices : [steps] [paths] [n] f32 = map2(\x z->
                         let pricings = map(\y ->
                             map(\swap ->
                                 let pricing : Pricing = {swap = swap, vasicek=vasicek,t = z, r = y}
