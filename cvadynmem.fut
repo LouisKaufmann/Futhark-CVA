@@ -41,7 +41,7 @@ let gen_remaining (next: f32) (swap_term : f32) (remaining:i64) =
     in remaining_dates
 
 let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
-    let payments = f32.ceil (t/swap.term)
+    let payments = f32.ceil (t/swap.term - 1)
     let nextpayment = payments*swap.term
     let remaining = swap.payments - i64.f32 payments
     let remaining_dates = gen_remaining nextpayment swap.term remaining
