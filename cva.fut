@@ -134,24 +134,11 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                         let unflattened : [paths] [n] f32 = unflatten paths n prices
                         in unflattened
                     ) (transpose shortrates) times
-    -- let flattened = flatten_3d pricings
-    -- let prices = expand_outer_reduce pricing_size pricing_get (+) 0 flattened
-    -- let unflattened : [paths] [steps] [n] f32 = unflatten_3d paths steps n prices
-    -- let transposed : [steps] [paths] [n] f32 = transpose unflattened
-
     let avgexp = map (\(xs : [paths] [n] f32) : f32->
                     let netted : [paths] f32 = map(\(x : [n] f32 )-> reduce (+) 0 x) (xs)
                     let pfe = map (\x -> f32.max 0 x) netted
                     in (reduce(+) 0 pfe)/(f32.i64 paths)
                 ) (prices)
-
-    -- Dynamic memory approach (probably sequential execution)
-    -- let exposures = map(\x ->
-    --                     map2 (\y z -> f32.max 0 ( if z > last_date then 0 else
-    --                      reduce (+) 0(map swapprice swaps[0] vasicek y z)
-    --                      ) x times) shortrates
-    -- let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
-
     -- -- Exposure averaging and CVA calculation
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
     let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
