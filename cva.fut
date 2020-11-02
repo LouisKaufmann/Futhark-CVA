@@ -109,7 +109,6 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
         fixed=(set_fixed_rate swap_term[x] payments[x] vasicek)}) (indices swap_term)
 
     let times = gen_times steps max_duration
-    let last_date = swap_term[0] * f32.i64(payments[0] - 1)
 
     let rng = minstd_rand.rng_from_seed [1]
     let rng_vec = minstd_rand.split_rng paths rng

@@ -121,20 +121,22 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
             in v) rng_mat
         in row) rng_vec
     let shortrates = map(\x -> mc_shortrate vasicek r0 steps x) rands
-    
+
     -- Dynamic memory approach (probably sequential execution)
     let exposures = map(\x ->
-                        map2 (\y z -> f32.max 0 (
-                         reduce (+) 0 (map (\swap -> 
-                            if z > swap.term *f32.i64(swap.payments - 1) then 0 
-                            else swapprice swap vasicek y z) swaps))
-                         ) x times) shortrates
+                        map2 (\y z ->
+                        let exp = map (\swap ->
+                            if z > swap.term *f32.i64(swap.payments - 1) then 0
+                            else swapprice swap vasicek y z) swaps
+                        let netted = reduce (+) 0 exposures
+                        let pfe = f32.max 0 netted
+                        ) x times) shortrates
     let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
 
     -- -- Exposure averaging and CVA calculation
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
     let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
-    in (CVA, avgexp)
+    in (CVA, dexp)
 
 -- ==
 -- entry: test
@@ -143,6 +145,6 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
 -- input { 1000000i64 500i64 }
 
 entry test (paths:i64) (steps:i64) : f32 =
-  main paths steps [1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1] 
-  [10,20,5,5,50,20,30,15,18,10,200,5,5,50,20,30,15,18,10,20,5,5,100,20,30,15,18,10,20,5,5,50,20,30,15,18,10,20,5,5,50,20,30,15,18] 
+  main paths steps [1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1]
+  [10,20,5,5,50,20,30,15,18,10,200,5,5,50,20,30,15,18,10,20,5,5,100,20,30,15,18,10,20,5,5,50,20,30,15,18,10,20,5,5,50,20,30,15,18]
   [1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1] 0.01 0.05 0.001 0.05 |> (.0)
