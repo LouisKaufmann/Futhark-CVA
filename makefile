@@ -27,7 +27,7 @@ cva-o.out: cva-o.exe
 	echo $(PARAMS) | ./$< > $@
 	echo $(PARAMS) | $(TIME) ./$< > $@
 
-cva-dyn.out: cva-dyn.out
+cva-dyn.out: cva-dyn.exe
 	echo $(PARAMS) | ./$< > $@
 	echo $(PARAMS) | $(TIME) ./$< > $@
 
