@@ -16,6 +16,9 @@ cva-c.exe: cva.fut
 cva-o.exe: cva.fut
 	futhark opencl -o $@ $<
 
+cva-dyn.exe: cvadynmem.fut
+	futhark opencl -o $@ $<
+
 # first make a heat-up execution
 cva-c.out: cva-c.exe
 	echo $(PARAMS) | ./$< > $@
@@ -23,6 +26,10 @@ cva-c.out: cva-c.exe
 
 # first make a heat-up execution
 cva-o.out: cva-o.exe
+	echo $(PARAMS) | ./$< > $@
+	echo $(PARAMS) | $(TIME) ./$< > $@
+
+cva-dyn.out: cva-dyn.exe
 	echo $(PARAMS) | ./$< > $@
 	echo $(PARAMS) | $(TIME) ./$< > $@
 
