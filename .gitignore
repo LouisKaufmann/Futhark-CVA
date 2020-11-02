@@ -2,6 +2,6 @@ cva
 __pycache__
 cva.py
 lib/
-.ipynb_checkpoints
+.ipynb_checkpoints/
 cva2
 cvaold

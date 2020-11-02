@@ -128,7 +128,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                         let exp = map (\swap ->
                             if z > swap.term *f32.i64(swap.payments - 1) then 0
                             else swapprice swap vasicek y z) swaps
-                        let netted = reduce (+) 0 exposures
+                        let netted = reduce (+) 0 exp
                         let pfe = f32.max 0 netted
                         in pfe
                         ) x times) shortrates
