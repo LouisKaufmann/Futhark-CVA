@@ -51,7 +51,7 @@ let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
     in swap.notional * (leg1 - leg2 - swap.fixed*swap.term*leg3)
 
 let gen_payment_dates (swap_payments: i64) (swap_term:f32) =
-    let seq = map(f32.i64) (0..1...swap_payments - 1)
+    let seq = map(f32.i64) (1..2...swap_payments)
     in map(*swap_term) seq
 
 
@@ -71,7 +71,7 @@ let mc_shortrate (vasicek: Vasicek) (r0:f32) (steps: i64) (rands: [steps] f32): 
         loop x = (replicate steps r0) for i < steps-1 do x with [i+1] = (shortstep vasicek x[i] rands[i])
     in xs
 
---Get and size functions needed for expand_reduce function in 
+--Get and size functions needed for expand_reduce function in
 let pricing_size (pricing:Pricing) : i64=
     let payments = f32.ceil (pricing.t/pricing.swap.term - 1)
     in i64.max (pricing.swap.payments - i64.f32 payments) 0
@@ -88,14 +88,15 @@ let pricing_get (pricing:Pricing) (i : i64) : f32=
     let start = f32.ceil (pricing.t/pricing.swap.term) * pricing.swap.term
     let coef = (coef_get pricing i)
     let price = bondprice pricing.vasicek pricing.r pricing.t (start + (f32.i64 i)*pricing.swap.term)
-    in coef * price
+    in coef * price * pricing.swap.notional
 
 -- Set the fixed rate, given a swap term, number of payments and a vasicek model
 let set_fixed_rate (swap_term: f32) (swap_payments: i64) (vasicek:Vasicek) : f32 =
     let payment_dates = gen_payment_dates swap_payments swap_term
     let leg1 = bondprice vasicek vasicek.r0 0 (payment_dates[::-1])[0]
-    let sum = reduce (+) 0 (map (\x -> bondprice vasicek vasicek.r0 0 x) payment_dates[1:])
+    let sum = reduce (+) 0 (map (\x -> bondprice vasicek vasicek.r0 0 x) payment_dates)
     in (1.0 - leg1)/(sum*swap_term)
+
 
 entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                 (notional:[n]f32) (a:f32) (b:f32) (sigma: f32) (r0: f32)=
@@ -138,6 +139,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                     let pfe = map (\x -> f32.max 0 x) netted
                     in (reduce(+) 0 pfe)/(f32.i64 paths)
                 ) (prices)
+
     -- -- Exposure averaging and CVA calculation
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
     let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)

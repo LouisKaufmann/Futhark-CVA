@@ -51,7 +51,7 @@ let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
     in swap.notional * (leg1 - leg2 - swap.fixed*swap.term*leg3)
 
 let gen_payment_dates (swap_payments: i64) (swap_term:f32) =
-    let seq = map(f32.i64) (0..1...swap_payments - 1)
+    let seq = map(f32.i64) (1..2...swap_payments)
     in map(*swap_term) seq
 
 
@@ -88,13 +88,13 @@ let pricing_get (pricing:Pricing) (i : i64) : f32=
     let start = f32.ceil (pricing.t/pricing.swap.term) * pricing.swap.term
     let coef = (coef_get pricing i)
     let price = bondprice pricing.vasicek pricing.r pricing.t (start + (f32.i64 i)*pricing.swap.term)
-    in coef * price * swap.notional
+    in coef * price * pricing.swap.notional
 
 -- Set the fixed rate, given a swap term, number of payments and a vasicek model
 let set_fixed_rate (swap_term: f32) (swap_payments: i64) (vasicek:Vasicek) : f32 =
     let payment_dates = gen_payment_dates swap_payments swap_term
     let leg1 = bondprice vasicek vasicek.r0 0 (payment_dates[::-1])[0]
-    let sum = reduce (+) 0 (map (\x -> bondprice vasicek vasicek.r0 0 x) payment_dates[1:])
+    let sum = reduce (+) 0 (map (\x -> bondprice vasicek vasicek.r0 0 x) payment_dates)
     in (1.0 - leg1)/(sum*swap_term)
 
 entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
