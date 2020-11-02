@@ -88,7 +88,7 @@ let pricing_get (pricing:Pricing) (i : i64) : f32=
     let start = f32.ceil (pricing.t/pricing.swap.term) * pricing.swap.term
     let coef = (coef_get pricing i)
     let price = bondprice pricing.vasicek pricing.r pricing.t (start + (f32.i64 i)*pricing.swap.term)
-    in coef * price
+    in coef * price * swap.notional
 
 -- Set the fixed rate, given a swap term, number of payments and a vasicek model
 let set_fixed_rate (swap_term: f32) (swap_payments: i64) (vasicek:Vasicek) : f32 =

@@ -5,3 +5,4 @@ lib/
 .ipynb_checkpoints/
 cva2
 cvaold
+test.py
