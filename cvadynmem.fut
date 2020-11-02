@@ -130,6 +130,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                             else swapprice swap vasicek y z) swaps
                         let netted = reduce (+) 0 exposures
                         let pfe = f32.max 0 netted
+                        in pfe
                         ) x times) shortrates
     let avgexp = map(\xs -> (reduce(+) 0 xs)/(f32.i64 paths)) (transpose exposures)
 
