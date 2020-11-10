@@ -2,6 +2,7 @@ import "lib/github.com/diku-dk/cpprandom/random"
 import "lib/github.com/diku-dk/segmented/segmented"
 
 module dist = normal_distribution f32 minstd_rand
+module uniform = uniform_real_distribution f32 minstd_rand
 
 type Swap = {
     term: f32,
@@ -51,13 +52,13 @@ let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
     in swap.notional * (leg1 - leg2 - swap.fixed*swap.term*leg3)
 
 
-let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
-    let remaining = swap.payments - swap.term*(f32.ceil (t/swap.term))
-    let remaining_dates =  map(+payments*swap_term) (map (f32.i32) iota remaining)
-    let leg1 = bondprice vasicek r t remaining_dates[0]
-    let leg2 = bondprice vasicek r t (remaining_dates[::-1])[0]
-    let leg3 = reduce (+) 0 (map (\x -> bondprice vasicek r t x) remaining_dates[1:])
-    in swap.notional * (leg1 - leg2 - swap.fixed*swap.term*leg3)
+-- let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
+--     let remaining = swap.payments - swap.term*(f32.ceil (t/swap.term))
+--     let remaining_dates =  map(+payments*swap_term) (map (f32.i32) iota remaining)
+--     let leg1 = bondprice vasicek r t remaining_dates[0]
+--     let leg2 = bondprice vasicek r t (remaining_dates[::-1])[0]
+--     let leg3 = reduce (+) 0 (map (\x -> bondprice vasicek r t x) remaining_dates[1:])
+--     in swap.notional * (leg1 - leg2 - swap.fixed*swap.term*leg3)
 
 let gen_payment_dates (swap_payments: i64) (swap_term:f32) =
     let seq = map(f32.i64) (1..2...swap_payments)
@@ -192,6 +193,6 @@ entry test2 (paths:i64) (steps:i64) (numswaps:i64): f32 =
     let rng_mat = map(\x -> minstd_rand.split_rng numswaps rng) (minstd_rand.split_rng 3 rng)
     let terms = map(\x-> uniform.rand (0,2) x |> (.1)) rng_mat[0]
     let payments = map(\x -> i64.f32 (uniform.rand (1, (f32.i64 numswaps)) x |> (.1))) rng_mat[1]
-    let netting = map(\x -> uniform.rand(-1,1) x |> (.1) ) rng_mat[2]
-    in main paths steps terms payments netting 0.01 0.05 0.001 0.05 |> (.0)
+    let notional = map(\x -> uniform.rand(-1,1) x |> (.1) ) rng_mat[2]
+    in main paths steps terms payments notional 0.01 0.05 0.001 0.05 |> (.0)
 

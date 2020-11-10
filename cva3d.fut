@@ -2,6 +2,7 @@ import "lib/github.com/diku-dk/cpprandom/random"
 import "lib/github.com/diku-dk/segmented/segmented"
 
 module dist = normal_distribution f32 minstd_rand
+module uniform = uniform_real_distribution f32 minstd_rand
 
 type Swap = {
     term: f32,
