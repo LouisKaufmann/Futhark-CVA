@@ -88,7 +88,7 @@ let pricing_get (pricing:Pricing) (i : i64) : f32=
     let start = f32.ceil (pricing.t/pricing.swap.term) * pricing.swap.term
     let coef = (coef_get pricing i)
     let price = bondprice pricing.vasicek pricing.r pricing.t (start + (f32.i64 i)*pricing.swap.term)
-    in coef * price * pricing.swap.notional
+    in coef * price
 
 -- Set the fixed rate, given a swap term, number of payments and a vasicek model
 let set_fixed_rate (swap_term: f32) (swap_payments: i64) (vasicek:Vasicek) : f32 =
@@ -154,3 +154,22 @@ entry test (paths:i64) (steps:i64) : f32 =
   main paths steps [1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1]
   [10,20,5,5,50,20,30,15,18,10,200,5,5,50,20,30,15,18,10,20,5,5,100,20,30,15,18,10,20,5,5,50,20,30,15,18,10,20,5,5,50,20,30,15,18]
   [1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1] 0.01 0.05 0.001 0.05 |> (.0)
+
+
+
+-- ==
+-- entry: test2
+-- input { 100000i64 100i64 10i64}
+-- input { 100000i64 100i64 20i64}
+-- input { 100000i64 100i64 50i64}
+-- input { 100000i64 100i64 100i64}
+-- input { 100000i64 100i64 200i64}
+
+
+entry test2 (paths:i64) (steps:i64) (numswaps:i64): f32 =
+    let rng = minstd_rand.rng_from_seed [123]
+    let rng_mat = map(\x -> minstd_rand.split_rng numswaps rng) (minstd_rand.split_rng 3 rng)
+    let terms = map(\x-> uniform.rand (0,2) x |> (.1)) rng_mat[0]
+    let payments = map(\x -> i64.f32 (uniform.rand (1, (f32.i64 numswaps)) x |> (.1))) rng_mat[1]
+    let netting = map(\x -> uniform.rand(-1,1) x |> (.1) ) rng_mat[2]
+    in main paths steps terms payments netting 0.01 0.05 0.001 0.05 |> (.0)

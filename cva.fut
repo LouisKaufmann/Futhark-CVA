@@ -2,6 +2,7 @@ import "lib/github.com/diku-dk/cpprandom/random"
 import "lib/github.com/diku-dk/segmented/segmented"
 
 module dist = normal_distribution f32 minstd_rand
+module uniform = uniform_real_distribution f32 minstd_rand
 
 type Swap = {
     term: f32,
@@ -134,16 +135,16 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
                         let unflattened : [paths] [n] f32 = unflatten paths n prices
                         in unflattened
                     ) (transpose shortrates) times
-    let avgexp = map (\(xs : [paths] [n] f32) : f32->
+    let EE = map (\(xs : [paths] [n] f32) : f32->
                     let netted : [paths] f32 = map(\x-> reduce (+) 0 x) (xs)
                     let pfe = map (\x -> f32.max 0 x) netted
                     in (reduce(+) 0 pfe)/(f32.i64 paths)
                 ) (prices)
 
     -- -- Exposure averaging and CVA calculation
-    let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) avgexp times
-    let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
-    in (CVA, avgexp)
+    let DE = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) EE times
+    let CVA = (1-0.4) * 0.01 * reduce (+) 0 (DE)
+    in (CVA, prices)
 
 -- ==
 -- entry: test
@@ -155,3 +156,21 @@ entry test (paths:i64) (steps:i64) : f32 =
   main paths steps [1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1,1,0.5,0.25,0.1,0.3,0.1,2,3,1]
   [10,20,5,5,50,20,30,15,18,10,200,5,5,50,20,30,15,18,10,20,5,5,100,20,30,15,18,10,20,5,5,50,20,30,15,18,10,20,5,5,50,20,30,15,18]
   [1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1,1,-0.5,1,1,1,1,1,1,1] 0.01 0.05 0.001 0.05 |> (.0)
+
+
+-- ==
+-- entry: test2
+-- input { 100000i64 100i64 10i64}
+-- input { 100000i64 100i64 20i64}
+-- input { 100000i64 100i64 50i64}
+-- input { 100000i64 100i64 100i64}
+-- input { 100000i64 100i64 200i64}
+
+
+entry test2 (paths:i64) (steps:i64) (numswaps:i64): f32 =
+    let rng = minstd_rand.rng_from_seed [123]
+    let rng_mat = map(\x -> minstd_rand.split_rng numswaps rng) (minstd_rand.split_rng 3 rng)
+    let terms = map(\x-> uniform.rand (0,2) x |> (.1)) rng_mat[0]
+    let payments = map(\x -> i64.f32 (uniform.rand (1, (f32.i64 numswaps)) x |> (.1))) rng_mat[1]
+    let netting = map(\x -> uniform.rand(-1,1) x |> (.1) ) rng_mat[2]
+    in main paths steps terms payments netting 0.01 0.05 0.001 0.05 |> (.0)
