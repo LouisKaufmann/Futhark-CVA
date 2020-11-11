@@ -8,3 +8,4 @@ cvaold
 test.py
 plot.py
 Sequential-CVA.ipynb
+parallelcva.py

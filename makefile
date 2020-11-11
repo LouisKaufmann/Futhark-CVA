@@ -10,13 +10,13 @@ test:
 	futhark pyopencl --library cva.fut
 	python3 parallelcva.py
 
-cva-c.exe: cva.fut
+cva-c.exe: cva-map.fut
 	futhark c -o $@ $<
 
-cva-o.exe: cva.fut
+cva-o.exe: cva-map.fut
 	futhark opencl -o $@ $<
 
-cva-dyn.exe: cvadynmem.fut
+cva-exp.exe: cva-expand.fut
 	futhark opencl -o $@ $<
 
 cva-c.out: cva-c.exe
@@ -27,7 +27,7 @@ cva-o.out: cva-o.exe
 	echo $(PARAMS) | ./$< > $@
 	echo $(PARAMS) | $(TIME) ./$< > $@
 
-cva-dyn.out: cva-dyn.exe
+cva-exp.out: cva-exp.exe
 	echo $(PARAMS) | ./$< > $@
 	echo $(PARAMS) | $(TIME) ./$< > $@
 
