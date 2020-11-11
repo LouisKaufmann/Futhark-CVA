@@ -33,4 +33,4 @@ cva-exp.out: cva-exp.exe
 
 .PHONY: clean
 clean:
-	rm -rf *~ *.exe *.c *.pyc __pycache__ cva.py runtime out.fut cva cva2 cvaold *.out
+	rm -rf *~ *.exe *.c *.pyc __pycache__ cva.py runtime out.fut cva-map cva-expand *.out

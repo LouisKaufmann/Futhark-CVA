@@ -154,8 +154,9 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
 -- ==
 -- entry: test
 -- input {  1000i64 100i64 }
+-- input { 10000i64 100i64 }
+-- input { 100000i64 100i64 }
 -- input { 100000i64 500i64 }
--- input { 1000000i64 500i64 }
 
 entry test (paths:i64) (steps:i64) =
   main paths steps [1,0.5,0.25,0.1]
