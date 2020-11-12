@@ -1,4 +1,4 @@
-#Code for BSc thesis - "Acceleration of CVA calculations using Futhark"
+### Code for BSc thesis - "Acceleration of CVA calculations using Futhark"
 First use futhark pkg to install the required packages, by using
 
     futhark pkg sync
