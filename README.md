@@ -1,5 +1,7 @@
 Code for BSc thesis - "Acceleration of CVA calculations using Futhark"
+First use futhark pkg to install the required packages, by using
 
+    futhark pkg sync
 To compile the two versions and run a test dataset, use the command:
 
     Make clean all 	
