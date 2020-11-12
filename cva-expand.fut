@@ -110,7 +110,6 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
         fixed=(set_fixed_rate swap_term[x] payments[x] vasicek)}) (indices swap_term)
 
     let times = gen_times steps max_duration
-    let last_date = swap_term[0] * f32.i64(payments[0] - 1)
 
     let rng = minstd_rand.rng_from_seed [1]
     let rng_vec = minstd_rand.split_rng paths rng
@@ -137,15 +136,14 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
     let unflattened : [paths] [steps] [n] f32 = unflatten_3d paths steps n prices
     let transposed : [steps] [paths] [n] f32 = transpose unflattened
 
-    let pfes = map (\(xs : [paths] [n] f32) : [paths] f32->
+    let exp = map (\(xs : [paths] [n] f32) : [paths] f32->
                     let netted : [paths] f32 = map(\(x : [n] f32 )-> reduce (+) 0 x) (xs)
                     let pfe = map (\x -> f32.max 0 x) netted
                     in pfe
                 ) (transposed)
-    
     --    CVA calculation
     
-    let EE = map(\xs -> (reduce (+) 0 xs)/(f32.i64 paths)) pfes
+    let EE = map(\xs -> (reduce (+) 0 xs)/(f32.i64 paths)) exp
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) EE times
     let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
 
@@ -175,7 +173,7 @@ entry test (paths:i64) (steps:i64) : f32 =
 
 entry test2 (paths:i64) (steps:i64) (numswaps:i64): f32 =
     let rng = minstd_rand.rng_from_seed [123]
-    let rng_mat = map(\x -> minstd_rand.split_rng numswaps rng) (minstd_rand.split_rng 3 rng)
+    let rng_mat = map(\x -> minstd_rand.split_rng numswaps x) (minstd_rand.split_rng 3 rng)
     let terms = map(\x-> uniform.rand (0,2) x |> (.1)) rng_mat[0]
     let payments = map(\x -> i64.f32 (uniform.rand (1, (f32.i64 numswaps)) x |> (.1))) rng_mat[1]
     let netting = map(\x -> uniform.rand(-1,1) x |> (.1) ) rng_mat[2]

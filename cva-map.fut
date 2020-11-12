@@ -36,29 +36,14 @@ let bondprice (vasicek: Vasicek) (r:f32) (t:f32) (T:f32) : f32 =
     let A = exp (A1 - A2)
     in A * exp (-B*r)
 
-let gen_remaining (next: f32) (swap_term : f32) (remaining:i64) =
-    let seq = map(f32.i64)  (1..2...remaining)
-    let remaining_dates = map(+next) ( map(*swap_term) seq)
-    in remaining_dates
-
 let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
-    let payments = f32.ceil (t/swap.term)
-    let nextpayment = payments*swap.term
-    let remaining = swap.payments - i64.f32 payments
-    let remaining_dates = gen_remaining nextpayment swap.term remaining
+    let remaining = swap.payments - i64.f32 (f32.ceil (t/swap.term))
+    let nextpayment = (f32.ceil(t/swap.term))*swap.term
+    let remaining_dates =  map(\x -> nextpayment + ((f32.i64 x + 1)*swap.term)) (iota remaining)
     let leg1 = bondprice vasicek r t nextpayment
     let leg2 = bondprice vasicek r t (remaining_dates[::-1])[0]
-    let leg3 = reduce (+) 0 (map (\x -> bondprice vasicek r t x) remaining_dates)
+    let leg3 = reduce (+) 0 (map (bondprice vasicek r t) remaining_dates)
     in swap.notional * (leg1 - leg2 - swap.fixed*swap.term*leg3)
-
-
--- let swapprice (swap : Swap) (vasicek : Vasicek) (r:f32) (t:f32) =
---     let remaining = swap.payments - swap.term*(f32.ceil (t/swap.term))
---     let remaining_dates =  map(+(payments*swap_term)) (map (f32.i32) (iota remaining))
---     let leg1 = bondprice vasicek r t remaining_dates[0]
---     let leg2 = bondprice vasicek r t (remaining_dates[::-1])[0]
---     let leg3 = reduce (+) 0 (map (bondprice vasicek r t) remaining_dates[1:])
---     in swap.notional * (leg1 - leg2 - swap.fixed*swap.term*leg3)
 
 let gen_payment_dates (swap_payments: i64) (swap_term:f32) =
     let seq = map(f32.i64) (1..2...swap_payments)
@@ -117,7 +102,8 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
         {term=swap_term[x],
         payments=payments[x],
         notional=notional[x],
-        fixed=(set_fixed_rate swap_term[x] payments[x] vasicek)}) (indices swap_term)
+        fixed=(set_fixed_rate swap_term[x] payments[x] vasicek)})
+        (indices swap_term)
 
     let times = gen_times steps max_duration
 
@@ -134,7 +120,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
     let shortrates = map(\x -> mc_shortrate vasicek r0 steps x) rands
 
     -- Portfolio evaluation for each scenario
-    let pfes = map(\x ->
+    let exp = map(\x ->
                         map2 (\y z ->
                         let exp = map (\swap ->
                             if z > swap.term *f32.i64(swap.payments - 1) then 0
@@ -146,7 +132,7 @@ entry main [n]  (paths:i64) (steps:i64) (swap_term: [n]f32) (payments: [n]i64)
 
     -- -- Exposure averaging and CVA calculation
 
-    let EE = map(\xs -> (reduce (+) 0 xs)/(f32.i64 paths)) (transpose pfes)
+    let EE = map(\xs -> (reduce (+) 0 xs)/(f32.i64 paths)) (transpose exp)
     let dexp = map2 (\y z -> y * (bondprice vasicek 0.05 0 z) ) EE times
     let CVA = (1-0.4) * 0.01 * reduce (+) 0 (dexp)
     in (CVA, EE)
@@ -163,9 +149,6 @@ entry test (paths:i64) (steps:i64) =
   [10,20,5,5]
   [1,-0.5,1,1] 0.01 0.05 0.001 0.05 |> (.0)
 
-
-
-
 -- ==
 -- entry: test2
 -- input { 100000i64 100i64 10i64}
@@ -177,7 +160,7 @@ entry test (paths:i64) (steps:i64) =
 
 entry test2 (paths:i64) (steps:i64) (numswaps:i64): f32 =
     let rng = minstd_rand.rng_from_seed [123]
-    let rng_mat = map(\x -> minstd_rand.split_rng numswaps rng) (minstd_rand.split_rng 3 rng)
+    let rng_mat = map(\x -> minstd_rand.split_rng numswaps x) (minstd_rand.split_rng 3 rng)
     let terms = map(\x-> uniform.rand (0,2) x |> (.1)) rng_mat[0]
     let payments = map(\x -> i64.f32 (uniform.rand (1, (f32.i64 numswaps)) x |> (.1))) rng_mat[1]
     let notional = map(\x -> uniform.rand(-1,1) x |> (.1) ) rng_mat[2]
